@@ -23,7 +23,16 @@ function PresetCard({
       <button type="button" className="preset-card__select" onClick={() => onToggle(preset)}>
         <img src={preset.thumbnail} alt={preset.name} />
         <div className="preset-card__content">
-          <div className="preset-card__name">{preset.name}</div>
+          <div className="preset-card__heading">
+            <div className="preset-card__name">{preset.name}</div>
+            <span
+              className={
+                preset.isSystem ? "preset-card__badge preset-card__badge--system" : "preset-card__badge"
+              }
+            >
+              {preset.isSystem ? "系统" : "自定义"}
+            </span>
+          </div>
           <p className="preset-card__prompt" title={preset.prompt}>
             {preset.prompt}
           </p>

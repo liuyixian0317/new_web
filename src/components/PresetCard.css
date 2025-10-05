@@ -36,9 +36,34 @@
   padding: 14px 16px 52px 16px;
 }
 
+.preset-card__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .preset-card__name {
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+
+.preset-card__badge {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(52, 211, 153, 0.2);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+}
+
+.preset-card__badge--system {
+  background: rgba(148, 163, 184, 0.28);
+  border-color: rgba(148, 163, 184, 0.45);
+  color: rgba(226, 232, 240, 0.78);
 }
 
 .preset-card__prompt {
