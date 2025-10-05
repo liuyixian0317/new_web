@@ -1,0 +1,72 @@
+.preset-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.preset-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.preset-section__header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.preset-section__header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.preset-section__tabs {
+  display: inline-flex;
+  gap: 12px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.preset-tab {
+  border: none;
+  background: transparent;
+  color: rgba(226, 232, 240, 0.7);
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.preset-tab--active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(99, 102, 241, 0.18));
+  color: #38bdf8;
+}
+
+.preset-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.preset-section__empty {
+  border-radius: 18px;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  padding: 32px;
+  text-align: center;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+@media (max-width: 960px) {
+  .preset-section {
+    padding: 20px;
+  }
+}
