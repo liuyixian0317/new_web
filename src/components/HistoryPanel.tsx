@@ -24,6 +24,16 @@ function HistoryPanel({ sectionId, tasks, onSelectTask }: HistoryPanelProps) {
               className={`history-panel__item history-panel__item--${task.status}`}
             >
               <span className="history-panel__time">{task.createdAt}</span>
+              {(task.origin || task.requestedCount) && (
+                <div className="history-panel__meta">
+                  {task.origin && <span className="history-panel__badge">{task.origin}</span>}
+                  {task.requestedCount && (
+                    <span className="history-panel__badge history-panel__badge--neutral">
+                      {task.requestedCount} 组
+                    </span>
+                  )}
+                </div>
+              )}
               <p className="history-panel__prompt" title={task.prompt}>
                 {task.prompt}
               </p>

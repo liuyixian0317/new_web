@@ -15,6 +15,9 @@ export interface GenerationTask {
   createdAt: string;
   status: "success" | "error" | "pending";
   results: GeneratedArtwork[];
+  requestedCount?: number;
+  origin?: string;
+  sourceArtworkId?: string;
 }
 
 export interface GeneratedArtwork {

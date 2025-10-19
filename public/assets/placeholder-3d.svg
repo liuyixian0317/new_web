@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240">
+  <defs>
+    <linearGradient id="panel-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="shape-grad" x1="12%" y1="20%" x2="88%" y2="80%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="320" height="240" rx="24" fill="url(#panel-grad)" />
+  <rect x="16" y="16" width="288" height="208" rx="20" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+  <path d="M160 56l82 48v96l-82 48-82-48V104l82-48z" fill="none" stroke="url(#shape-grad)" stroke-width="10" stroke-linejoin="round" />
+  <path d="M160 56l82 48-82 48-82-48z" fill="rgba(250,204,21,0.18)" />
+  <circle cx="102" cy="88" r="10" fill="#facc15" opacity="0.6" />
+  <circle cx="218" cy="88" r="10" fill="#f97316" opacity="0.6" />
+  <text x="50%" y="78%" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="18" fill="rgba(248,250,252,0.75)">
+    3D Model Preview Placeholder
+  </text>
+</svg>

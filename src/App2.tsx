@@ -176,6 +176,7 @@ interface PresetModalState {
 
 function App() {
   const [promptText, setPromptText] = useState("");
+  const [generationCount, setGenerationCount] = useState(1);
   const [customStylePresets, setCustomStylePresets] = useState<Preset[]>([]);
   const [customMaterialPresets, setCustomMaterialPresets] = useState<Preset[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
@@ -387,6 +388,10 @@ function App() {
             selectedPresets={selectedPresets}
             onClearPresets={handleClearPresets}
             onGenerate={handleGenerate}
+            generationCount={generationCount}
+            onGenerationCountChange={(value) =>
+              setGenerationCount(Math.min(10, Math.max(1, Math.round(value))))
+            }
             isGenerating={isGenerating}
           />
 
@@ -425,6 +430,7 @@ function App() {
             statusMessage={statusMessage}
             onDownload={handleDownloadArtwork}
             onCopyLink={handleCopyLink}
+            onSelect={(artwork) => setToastMessage(`预览作品 ${artwork.id}`)}
           />
         </div>
         <HistoryPanel sectionId="history" tasks={generationTasks} onSelectTask={handleSelectHistoryTask} />

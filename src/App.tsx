@@ -6,6 +6,7 @@ import GenerationGallery from "./components/GenerationGallery";
 import HistoryPanel from "./components/HistoryPanel";
 import Modal from "./components/Modal";
 import PresetEditorForm from "./components/PresetEditorForm";
+import ArtworkDetailPanel, { type ProductionFormValues } from "./components/ArtworkDetailPanel";
 import {
   SYSTEM_MATERIAL_PRESETS,
   SYSTEM_STYLE_PRESETS
@@ -14,6 +15,46 @@ import type { GeneratedArtwork, GenerationTask, Preset } from "./types";
 import "./styles/app.css";
 
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+const clampGenerationCount = (value: number) => Math.min(10, Math.max(1, Math.round(value)));
+const DETAIL_STORAGE_PREFIX = "midas-shiny-artwork-";
+const DETAIL_HASH_PREFIX = "artwork";
+
+interface ArtworkDetailSnapshot {
+  artwork: GeneratedArtwork;
+  task: GenerationTask;
+}
+
+const getDetailStorageKey = (artworkId: string) => `${DETAIL_STORAGE_PREFIX}${artworkId}`;
+
+const readDetailSnapshotFromLocation = (): ArtworkDetailSnapshot | null => {
+  const hash = window.location.hash;
+  if (!hash.startsWith(`#${DETAIL_HASH_PREFIX}`)) {
+    return null;
+  }
+
+  const rawQuery = hash.slice(DETAIL_HASH_PREFIX.length + 1); // remove #artwork
+  const search = rawQuery.startsWith("?") ? rawQuery.slice(1) : rawQuery;
+  const params = new URLSearchParams(search);
+  const artworkId = params.get("artworkId");
+  if (!artworkId) return null;
+
+  const storageKey = getDetailStorageKey(artworkId);
+  let stored: string | null = null;
+  try {
+    stored = sessionStorage.getItem(storageKey) ?? localStorage.getItem(storageKey);
+  } catch (error) {
+    console.warn("[Detail] read storage failed", error);
+  }
+  if (!stored) return null;
+
+  try {
+    const parsed = JSON.parse(stored) as ArtworkDetailSnapshot;
+    return parsed && parsed.artwork && parsed.task ? parsed : null;
+  } catch (error) {
+    console.warn("[Detail] parse snapshot failed", error);
+    return null;
+  }
+};
 
 const seedDreamApiUrl = (import.meta.env.VITE_SEEDDREAM_API_URL || "https://ark.cn-beijing.volces.com/api/v3/images/generations").trim();
 const seedDreamApiKey = import.meta.env.VITE_SEEDDREAM_API_KEY?.trim();
@@ -164,6 +205,7 @@ interface PresetModalState {
 
 function App() {
   const [promptText, setPromptText] = useState("");
+  const [generationCount, setGenerationCount] = useState(1);
   const [customStylePresets, setCustomStylePresets] = useState<Preset[]>([]);
   const [customMaterialPresets, setCustomMaterialPresets] = useState<Preset[]>([]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
@@ -173,12 +215,23 @@ function App() {
   const [statusMessage, setStatusMessage] = useState("准备中");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [modalState, setModalState] = useState<PresetModalState | null>(null);
+  const [detailSnapshot, setDetailSnapshot] = useState<ArtworkDetailSnapshot | null>(() =>
+    readDetailSnapshotFromLocation()
+  );
 
   useEffect(() => {
     if (!toastMessage) return;
     const timer = window.setTimeout(() => setToastMessage(null), 2600);
     return () => window.clearTimeout(timer);
   }, [toastMessage]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setDetailSnapshot(readDetailSnapshotFromLocation());
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   const allPresets = useMemo(() => {
     return [
@@ -198,6 +251,10 @@ function App() {
 
   const activeTask = generationTasks.find((task) => task.id === activeTaskId) ?? generationTasks[0];
   const activeArtworks = activeTask?.results ?? [];
+  const firstTaskWithResults = generationTasks.find((task) => task.results.length > 0);
+  const galleryTask = activeArtworks.length > 0 ? activeTask : firstTaskWithResults;
+  const galleryArtworks = galleryTask?.results ?? [];
+  const shouldShowGallery = galleryArtworks.length > 0;
 
   const handleTogglePreset = (preset: Preset) => {
     setSelectedPresetIds((prev) =>
@@ -271,18 +328,24 @@ function App() {
     setToastMessage(editingPreset ? "预设已更新" : "预设已创建");
   };
 
-  const handleGenerate = async () => {
-    if (!promptText.trim() && selectedPresets.length === 0) {
-      alert("请先输入Prompt或至少选择一个预设");
+  const startGeneration = async ({
+    prompt,
+    requestedCount,
+    origin,
+    sourceArtworkId
+  }: {
+    prompt: string;
+    requestedCount?: number;
+    origin?: string;
+    sourceArtworkId?: string;
+  }) => {
+    const cleanPrompt = prompt.trim();
+    if (!cleanPrompt) {
+      alert("请先输入 Prompt");
       return;
     }
 
-    const mergedPrompt = [promptText.trim(), ...selectedPresets.map((preset) => preset.prompt)]
-      .filter(Boolean)
-      .join(", ");
-
-    console.info("[SeedDream] prepare payload", { mergedPrompt, selectedPresets });
-
+    const count = clampGenerationCount(requestedCount ?? generationCount);
     const taskId = uuid();
     const createdAt = new Intl.DateTimeFormat("zh-CN", {
       dateStyle: "short",
@@ -291,16 +354,21 @@ function App() {
 
     const pendingTask: GenerationTask = {
       id: taskId,
-      prompt: mergedPrompt,
+      prompt: cleanPrompt,
       createdAt,
       status: "pending",
-      results: []
+      results: [],
+      origin,
+      requestedCount: count,
+      sourceArtworkId
     };
 
     setIsGenerating(true);
-    const status = seedDreamConfigured ? "SeedDream 4.0 正在生成，请稍候..." : "未配置 SeedDream，使用占位图展示";
-    setStatusMessage(status);
-    setToastMessage(status);
+    const initialStatus = seedDreamConfigured
+      ? `SeedDream 4.0 正在生成（${count} 组并行）...`
+      : "未配置 SeedDream，使用占位图展示";
+    setStatusMessage(initialStatus);
+    setToastMessage(initialStatus);
     setGenerationTasks((prev) => [pendingTask, ...prev]);
     ensureActiveTask(taskId);
 
@@ -308,26 +376,69 @@ function App() {
       const message = "未配置 SeedDream 接口";
       setStatusMessage(message);
       setToastMessage(message);
-      setIsGenerating(false);
-      return;
-    }
-
-    try {
-      const artworks = await requestSeedDream(taskId, mergedPrompt);
       setGenerationTasks((prev) =>
         prev.map((task) =>
           task.id === taskId
             ? {
                 ...task,
-                status: "success",
-                results: artworks
+                status: "error"
               }
             : task
         )
       );
-      const successMessage = "生成完成，可在右侧查看记录";
-      setStatusMessage(successMessage);
-      setToastMessage(successMessage);
+      setIsGenerating(false);
+      return;
+    }
+
+    try {
+      const requests = Array.from({ length: count }, (_, index) =>
+        requestSeedDream(`${taskId}-batch${index}`, cleanPrompt)
+      );
+      const settled = await Promise.allSettled(requests);
+
+      const aggregated: GeneratedArtwork[] = [];
+      let failureCount = 0;
+
+      settled.forEach((result, batchIndex) => {
+        if (result.status === "fulfilled") {
+          result.value.forEach((artwork, artworkIndex) => {
+            const baseId =
+              typeof artwork.id === "string" && artwork.id.length > 0
+                ? artwork.id
+                : `${taskId}-art-${batchIndex}-${artworkIndex}`;
+            aggregated.push({
+              ...artwork,
+              id: `${taskId}-b${batchIndex}-${baseId}`
+            });
+          });
+        } else {
+          failureCount += 1;
+          console.error("[SeedDream] batch request failed", result.reason);
+        }
+      });
+
+      setGenerationTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                status: aggregated.length > 0 ? "success" : "error",
+                results: aggregated
+              }
+            : task
+        )
+      );
+
+      let message: string;
+      if (aggregated.length === 0) {
+        message = "生成失败，请稍后重试";
+      } else if (failureCount > 0) {
+        message = `部分成功：获得 ${aggregated.length} 张作品，${failureCount} 组请求失败`;
+      } else {
+        message = `生成完成，共获得 ${aggregated.length} 张作品`;
+      }
+      setStatusMessage(message);
+      setToastMessage(message);
     } catch (error) {
       console.error("[SeedDream] generation failed", error);
       const errorMessage =
@@ -350,6 +461,21 @@ function App() {
     }
   };
 
+  const handleGenerate = async () => {
+    if (!promptText.trim() && selectedPresets.length === 0) {
+      alert("请先输入 Prompt 或至少选择一个预设");
+      return;
+    }
+
+    const mergedPrompt = [promptText.trim(), ...selectedPresets.map((preset) => preset.prompt)]
+      .filter(Boolean)
+      .join(", ");
+
+    console.info("[SeedDream] prepare payload", { mergedPrompt, selectedPresets });
+
+    await startGeneration({ prompt: mergedPrompt });
+  };
+
   const handleDownloadArtwork = async (artwork: { id: string; imageUrl: string }) => {
     const link = document.createElement("a");
     link.href = artwork.imageUrl;
@@ -368,6 +494,104 @@ function App() {
     }
   };
 
+  const handleOpenArtworkDetail = (artwork: GeneratedArtwork, task: GenerationTask | undefined) => {
+    if (!task) return;
+    const snapshot: ArtworkDetailSnapshot = {
+      artwork,
+      task: {
+        id: task.id,
+        prompt: task.prompt,
+        createdAt: task.createdAt,
+        status: task.status,
+        results: [artwork],
+        requestedCount: task.requestedCount,
+        origin: task.origin,
+        sourceArtworkId: task.sourceArtworkId
+      }
+    };
+    const storageKey = getDetailStorageKey(artwork.id);
+    const serialized = JSON.stringify(snapshot);
+    try {
+      sessionStorage.setItem(storageKey, serialized);
+    } catch (error) {
+      console.warn("[Detail] sessionStorage set failed", error);
+    }
+    try {
+      localStorage.setItem(storageKey, serialized);
+    } catch (error) {
+      console.warn("[Detail] localStorage set failed", error);
+    }
+    const detailUrl = new URL(window.location.href);
+    detailUrl.hash = `${DETAIL_HASH_PREFIX}?artworkId=${encodeURIComponent(artwork.id)}`;
+    window.open(detailUrl.toString(), "_blank", "noopener,noreferrer");
+  };
+
+  const handleRefineFromDetail = async ({ prompt, count }: { prompt: string; count: number }) => {
+    if (!detailSnapshot) return;
+    await startGeneration({
+      prompt,
+      requestedCount: count,
+      origin: `精修 ${detailSnapshot.artwork.id}`,
+      sourceArtworkId: detailSnapshot.artwork.id
+    });
+  };
+
+  const handleRequest3DMock = () => {
+    setToastMessage("3D 模型占位图已生成，后端能力上线后将展示真实模型");
+  };
+
+  const handleSubmitProductionForm = (payload: ProductionFormValues) => {
+    console.info("[Production Questionnaire]", {
+      artworkId: detailSnapshot?.artwork.id,
+      ...payload
+    });
+    setToastMessage("问卷已提交，我们将尽快与您联系");
+  };
+
+  const clearStoredDetailSnapshot = () => {
+    if (!detailSnapshot) return;
+    const storageKey = getDetailStorageKey(detailSnapshot.artwork.id);
+    try {
+      sessionStorage.removeItem(storageKey);
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn("[Detail] clear storage failed", error);
+    }
+  };
+
+  const handleExitDetailPage = () => {
+    if (!detailSnapshot) return;
+    clearStoredDetailSnapshot();
+    if (window.opener) {
+      window.close();
+      return;
+    }
+    window.location.hash = "";
+    setDetailSnapshot(null);
+  };
+
+  if (detailSnapshot) {
+    return (
+      <div className="app-shell">
+        <AppHeader />
+        <main className="app-content">
+          <div className="app-main">
+            <ArtworkDetailPanel
+              artwork={detailSnapshot.artwork}
+              task={detailSnapshot.task}
+              isProcessing={isGenerating}
+              onClose={handleExitDetailPage}
+              onRefine={handleRefineFromDetail}
+              onRequest3D={handleRequest3DMock}
+              onSubmitProduction={handleSubmitProductionForm}
+            />
+          </div>
+        </main>
+        {toastMessage && <div className="status-toast">{toastMessage}</div>}
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <AppHeader />
@@ -380,8 +604,22 @@ function App() {
             selectedPresets={selectedPresets}
             onClearPresets={handleClearPresets}
             onGenerate={handleGenerate}
+            generationCount={generationCount}
+            onGenerationCountChange={(value) => setGenerationCount(clampGenerationCount(value))}
             isGenerating={isGenerating}
           />
+
+          {shouldShowGallery && (
+            <GenerationGallery
+              sectionId="gallery"
+              artworks={galleryArtworks}
+              isGenerating={isGenerating}
+              statusMessage={statusMessage}
+              onDownload={handleDownloadArtwork}
+              onCopyLink={handleCopyLink}
+              onSelect={(artwork) => handleOpenArtworkDetail(artwork, galleryTask)}
+            />
+          )}
 
           <PresetSection
             sectionId="style-presets"
@@ -411,14 +649,6 @@ function App() {
             onDelete={handleDeletePreset}
           />
 
-          <GenerationGallery
-            sectionId="gallery"
-            artworks={activeArtworks}
-            isGenerating={isGenerating}
-            statusMessage={statusMessage}
-            onDownload={handleDownloadArtwork}
-            onCopyLink={handleCopyLink}
-          />
         </div>
         <HistoryPanel sectionId="history" tasks={generationTasks} onSelectTask={handleSelectHistoryTask} />
       </main>

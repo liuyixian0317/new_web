@@ -65,6 +65,27 @@
   color: rgba(148, 163, 184, 0.8);
 }
 
+.history-panel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.history-panel__badge {
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  color: #facc15;
+}
+
+.history-panel__badge--neutral {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: rgba(226, 232, 240, 0.7);
+}
+
 .history-panel__status {
   font-size: 12px;
   color: #38bdf8;

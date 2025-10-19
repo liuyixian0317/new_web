@@ -8,6 +8,7 @@ interface GenerationGalleryProps {
   statusMessage: string;
   onDownload: (artwork: GeneratedArtwork) => void;
   onCopyLink: (artwork: GeneratedArtwork) => void;
+  onSelect: (artwork: GeneratedArtwork) => void;
 }
 
 function GenerationGallery({
@@ -16,7 +17,8 @@ function GenerationGallery({
   isGenerating,
   statusMessage,
   onDownload,
-  onCopyLink
+  onCopyLink,
+  onSelect
 }: GenerationGalleryProps) {
   return (
     <section id={sectionId} className="generation-gallery">
@@ -39,7 +41,14 @@ function GenerationGallery({
         <div className="gallery-grid">
           {artworks.map((artwork) => (
             <article className="gallery-card" key={artwork.id}>
-              <img src={artwork.imageUrl} alt={artwork.seed ?? "潮玩设计图"} loading="lazy" />
+              <button
+                type="button"
+                className="gallery-visual"
+                onClick={() => onSelect(artwork)}
+                title="查看详情并继续创作"
+              >
+                <img src={artwork.imageUrl} alt={artwork.seed ?? "潮玩设计图"} loading="lazy" />
+              </button>
               <div className="gallery-meta">
                 <div>
                   <span className="gallery-seed">Seed: {artwork.seed ?? "自动生成"}</span>

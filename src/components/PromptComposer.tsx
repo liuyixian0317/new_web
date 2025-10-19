@@ -9,6 +9,8 @@ interface PromptComposerProps {
   selectedPresets: Preset[];
   onClearPresets: () => void;
   onGenerate: () => void;
+  generationCount: number;
+  onGenerationCountChange: (value: number) => void;
   isGenerating: boolean;
   maxLength?: number;
 }
@@ -20,6 +22,8 @@ function PromptComposer({
   selectedPresets,
   onClearPresets,
   onGenerate,
+  generationCount,
+  onGenerationCountChange,
   isGenerating,
   maxLength = 500
 }: PromptComposerProps) {
@@ -64,6 +68,22 @@ function PromptComposer({
         </div>
 
         <div className="prompt-form__actions">
+          <label className="prompt-form__quantity" htmlFor="generation-count">
+            <span>生成数量</span>
+            <input
+              id="generation-count"
+              type="number"
+              min={1}
+              max={10}
+              value={generationCount}
+              disabled={isGenerating}
+              onChange={(event) => {
+                const nextValue = Number.parseInt(event.target.value, 10);
+                if (Number.isNaN(nextValue)) return;
+                onGenerationCountChange(nextValue);
+              }}
+            />
+          </label>
           <button type="submit" className="primary-btn" disabled={isGenerating}>
             {isGenerating ? "生成中..." : "开始生成"}
           </button>
