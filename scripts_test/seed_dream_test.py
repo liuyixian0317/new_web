@@ -12,10 +12,10 @@ client = Ark(
 imagesResponse = client.images.generate( 
     model="doubao-seedream-4-0-250828", 
     prompt="生成3张女孩和奶牛玩偶在游乐园开心地坐过山车的图片，涵盖早晨、中午、晚上",
-    image=["https://ark-project.tos-cn-beijing.volces.com/doc_image/seedream4_imagesToimages_1.png", "https://ark-project.tos-cn-beijing.volces.com/doc_image/seedream4_imagesToimages_2.png"],
+    # image=[""],
     size="2K",
     sequential_image_generation="auto",
-    sequential_image_generation_options=SequentialImageGenerationOptions(max_images=3),
+    sequential_image_generation_options=SequentialImageGenerationOptions(max_images=1),
     response_format="url",
     watermark=True
 ) 

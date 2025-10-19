@@ -9,12 +9,18 @@
 - 推荐使用 [nvm](https://github.com/nvm-sh/nvm) 管理 Node 版本：
   ```bash
   # 安装 nvm（macOS/Linux）
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-  # 加载 nvm（根据终端类型执行 profile 文件）
-  source ~/.bashrc  # 或 ~/.zshrc
-  # 安装并启用 Node 18 LTS
+
+  git clone https://github.com/nvm-sh/nvm.git
+  mv ~/nvm ~/.nvm
+  . ~/.nvm/nvm.sh # 执行
+  # 在source ~/.bashrc 中添加
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # bash 有补全时可选
+  nvm --version
   nvm install 18
   nvm use 18
+  node -v
   ```
 - Windows 用户可使用 [nvm-windows](https://github.com/coreybutler/nvm-windows) 或直接安装官方 MSI 包。
 
@@ -101,4 +107,14 @@
 - **SSL 或证书问题**：代理默认使用 HTTPS，可在 `vite.config.ts` 的 proxy 配置上调整 `secure` 选项。
 - **CORS 报错**：请确认通过本地代理发起请求（即访问 `/seed-dream` 路径），并重启 `npm run dev` 以应用新的代理配置。
 
-按照以上步骤操作，即可在本地完整搭建潮玩造梦师的开发环境。若遇到未覆盖的问题，请记录控制台输出与错误信息，便于进一步排查。
+- **处理vite问题** ：
+这是 npm 在处理 Rollup 的可选依赖时碰到的常见 bug，按提示清一次环境再装即可。
+在项目根目录执行：
+rm -rf node_modules package-lock.json
+npm install
+安装完成后重跑：node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 8080（或 npm run dev 如果脚本已经改过）。
+这样 Rollup 会重新拉取适合 linux-x64 的预编译包，问题就解了。
+按照以上步骤操作，即可在本地完整搭建 MIDAS SHINY 的开发环境。若遇到未覆盖的问题，请记录控制台输出与错误信息，便于进一步排查。
+
+- **网络问题**： 腾讯云开通8080端口
+用户访问需要用国内网络

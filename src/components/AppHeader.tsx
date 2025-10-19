@@ -8,10 +8,16 @@ function AppHeader() {
   return (
     <header className="app-header">
       <div className="app-header__branding">
-        <div className="app-header__logo">潮</div>
+        <img
+          className="app-header__logo"
+          src="/assets/midas-shiny-logo.svg"
+          alt="MIDAS SHINY logo"
+          width={48}
+          height={48}
+        />
         <div>
-          <div className="app-header__title">潮玩造梦师</div>
-          <div className="app-header__subtitle">AI潮玩设计生成平台</div>
+          <div className="app-header__title">MIDAS SHINY</div>
+          <div className="app-header__subtitle">AI 潮玩创作平台</div>
         </div>
       </div>
       <nav className="app-header__nav">

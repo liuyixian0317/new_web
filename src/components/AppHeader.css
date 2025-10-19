@@ -18,14 +18,14 @@
 }
 
 .app-header__logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
-  color: #0f172a;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: rgba(248, 250, 252, 0.06);
+  padding: 6px;
+  box-shadow: 0 10px 24px rgba(250, 204, 21, 0.22);
+  border: 1px solid rgba(248, 250, 252, 0.08);
 }
 
 .app-header__title {
@@ -50,24 +50,24 @@
 }
 
 .app-header__nav a:hover {
-  color: #38bdf8;
+  color: #facc15;
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
-  color: #0f172a;
+  background: linear-gradient(135deg, #facc15, #f97316);
+  color: #0b1120;
   border: none;
   border-radius: 999px;
   padding: 10px 22px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 12px 30px rgba(249, 115, 22, 0.25);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .primary-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 40px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 16px 40px rgba(250, 204, 21, 0.35);
 }
 
 @media (max-width: 960px) {
