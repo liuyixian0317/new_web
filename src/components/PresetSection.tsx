@@ -1,3 +1,4 @@
+import { useTranslation } from "../i18n";
 import type { Preset } from "../types";
 import PresetCard from "./PresetCard";
 import "./PresetSection.css";
@@ -29,11 +30,12 @@ function PresetSection({
   onEdit,
   onDelete
 }: PresetSectionProps) {
+  const { t } = useTranslation();
   const displayPresets = [...customPresets, ...systemPresets];
   const description =
     category === "style"
-      ? "点击喜欢的潮玩风格即可追加到提示词，支持与材质组合使用"
-      : "为造型选择不同的生产材质，和风格预设叠加即可快速微调质感";
+      ? t("preset.section.styleDescription")
+      : t("preset.section.materialDescription");
 
   return (
     <section id={sectionId} className="preset-section">
@@ -43,13 +45,13 @@ function PresetSection({
           <p>{description}</p>
         </div>
         <button type="button" className="ghost-btn" onClick={onCreate}>
-          新建预设
+          {t("preset.section.create")}
         </button>
       </div>
 
       {displayPresets.length === 0 ? (
         <div className="preset-section__empty">
-          <p>即将提供更多预设内容，您可以先创建属于自己的风格或材质。</p>
+          <p>{t("preset.section.empty")}</p>
         </div>
       ) : (
         <div className="preset-grid">

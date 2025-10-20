@@ -1,8 +1,15 @@
+import { useTranslation } from "../i18n";
 import "./AppHeader.css";
 
 function AppHeader() {
+  const { t, locale, setLocale } = useTranslation();
+
   const handleStart = () => {
     document.getElementById("composer")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleToggleLanguage = () => {
+    setLocale(locale === "en" ? "zh" : "en");
   };
 
   return (
@@ -17,15 +24,28 @@ function AppHeader() {
         />
         <div>
           <div className="app-header__title">MIDAS SHINY</div>
-          <div className="app-header__subtitle">AI 潮玩创作平台</div>
+          <div className="app-header__subtitle">{t("app.subtitle")}</div>
         </div>
       </div>
       <nav className="app-header__nav">
-        <a href="#composer">创意输入</a>
-        <a href="#style-presets">潮玩风格</a>
-        <a href="#history">生成记录</a>
+        <a href="#composer">{t("nav.composer")}</a>
+        <a href="#style-presets">{t("nav.stylePresets")}</a>
+        <a href="#material-presets">{t("nav.materialPresets")}</a>
+        <a href="#history">{t("nav.history")}</a>
       </nav>
-      <button className="primary-btn" onClick={handleStart}>立即体验</button>
+      <div className="app-header__actions">
+        <button
+          type="button"
+          className="language-toggle"
+          onClick={handleToggleLanguage}
+          title={t("language.toggle")}
+        >
+          {locale === "en" ? t("language.badge") : t("language.badge.zh")}
+        </button>
+        <button type="button" className="primary-btn" onClick={handleStart}>
+          {t("cta.start")}
+        </button>
+      </div>
     </header>
   );
 }

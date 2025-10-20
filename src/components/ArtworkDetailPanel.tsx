@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
+import { useTranslation } from "../i18n";
 import type { GeneratedArtwork, GenerationTask } from "../types";
 import "./ArtworkDetailPanel.css";
 
@@ -41,15 +42,16 @@ function ArtworkDetailPanel({
   onRequest3D,
   onSubmitProduction
 }: ArtworkDetailPanelProps) {
+  const { t } = useTranslation();
   const [refinePrompt, setRefinePrompt] = useState(task.prompt);
   const [refineCount, setRefineCount] = useState(1);
   const [show3DPreview, setShow3DPreview] = useState(false);
   const [productionForm, setProductionForm] = useState(initialProductionForm);
 
   const formattedPromptHint = useMemo(() => {
-    if (!artwork.seed) return `源自任务：${task.createdAt}`;
-    return `Seed ${artwork.seed} · ${task.createdAt}`;
-  }, [artwork.seed, task.createdAt]);
+    if (!artwork.seed) return t("detail.source.generated", { date: task.createdAt });
+    return t("detail.source.seed", { seed: artwork.seed, date: task.createdAt });
+  }, [artwork.seed, task.createdAt, t]);
 
   const handleRefineSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -68,19 +70,19 @@ function ArtworkDetailPanel({
     <section className="artwork-detail">
       <div className="artwork-detail__header">
         <div>
-          <h2>作品详情</h2>
+          <h2>{t("detail.title")}</h2>
           <p>{formattedPromptHint}</p>
         </div>
         <button type="button" className="ghost-btn" onClick={onClose}>
-          返回列表
+          {t("detail.back")}
         </button>
       </div>
 
       <div className="artwork-detail__content">
         <div className="artwork-detail__visual">
-          <img src={artwork.imageUrl} alt="已生成的潮玩设计" />
+          <img src={artwork.imageUrl} alt={t("gallery.artwork.alt")} />
           <div className="artwork-detail__meta">
-            <span>任务 Prompt</span>
+            <span>{t("detail.taskPrompt")}</span>
             <p>{task.prompt}</p>
           </div>
         </div>
@@ -88,21 +90,21 @@ function ArtworkDetailPanel({
         <div className="artwork-detail__panels">
           <form className="detail-card" onSubmit={handleRefineSubmit}>
             <header>
-              <h3>精修与微调</h3>
-              <p>调整 Prompt 后再次生成，快速得到你想要的版本。</p>
+              <h3>{t("detail.refine.title")}</h3>
+              <p>{t("detail.refine.subtitle")}</p>
             </header>
             <label className="detail-card__field">
-              <span>Prompt 内容</span>
+              <span>{t("detail.refine.prompt")}</span>
               <textarea
                 value={refinePrompt}
                 onChange={(event) => setRefinePrompt(event.target.value)}
-                placeholder="在此调整 Prompt ..."
+                placeholder={t("detail.refine.prompt")}
                 rows={6}
               />
             </label>
             <div className="detail-card__actions">
               <label htmlFor="refine-count">
-                <span>生成数量</span>
+                <span>{t("detail.refine.count")}</span>
                 <input
                   id="refine-count"
                   type="number"
@@ -114,15 +116,15 @@ function ArtworkDetailPanel({
                 />
               </label>
               <button type="submit" className="primary-btn" disabled={isProcessing}>
-                {isProcessing ? "处理中..." : "提交精修"}
+                {isProcessing ? t("composer.generate.processing") : t("detail.refine.submit")}
               </button>
             </div>
           </form>
 
           <div className="detail-card">
             <header>
-              <h3>3D 模型预览</h3>
-              <p>一键生成潮玩 3D 模型，后端实现完成后将在此呈现。</p>
+              <h3>{t("detail.preview.title")}</h3>
+              <p>{t("detail.preview.subtitle")}</p>
             </header>
             <button
               type="button"
@@ -133,79 +135,79 @@ function ArtworkDetailPanel({
               }}
               disabled={isProcessing}
             >
-              {show3DPreview ? "重新生成占位模型" : "转换为 3D 模型"}
+              {show3DPreview ? t("detail.preview.cta.repeat") : t("detail.preview.cta.initial")}
             </button>
             {show3DPreview && (
               <div className="detail-card__preview">
-                <img src="/assets/placeholder-3d.svg" alt="3D 模型占位图" />
-                <p>实际模型生成完成后，将替换为真实渲染画面。</p>
+                <img src="/assets/placeholder-3d.svg" alt="3D placeholder" />
+                <p>{t("detail.preview.placeholder")}</p>
               </div>
             )}
           </div>
 
           <form className="detail-card" onSubmit={handleProductionSubmit}>
             <header>
-              <h3>生产问卷</h3>
-              <p>填写潮玩量产意向，帮助我们评估工艺与排期。</p>
+              <h3>{t("detail.production.title")}</h3>
+              <p>{t("detail.production.subtitle")}</p>
             </header>
             <div className="detail-card__grid">
               <label className="detail-card__field">
-                <span>用途</span>
+                <span>{t("detail.production.usage")}</span>
                 <input
                   type="text"
                   value={productionForm.usage}
                   onChange={(event) => setProductionForm((prev) => ({ ...prev, usage: event.target.value }))}
-                  placeholder="例如：品牌周边 / 展会赠品"
+                  placeholder={t("detail.production.usage.placeholder")}
                 />
               </label>
               <label className="detail-card__field">
-                <span>材质偏好</span>
+                <span>{t("detail.production.material")}</span>
                 <input
                   type="text"
                   value={productionForm.material}
                   onChange={(event) => setProductionForm((prev) => ({ ...prev, material: event.target.value }))}
-                  placeholder="PVC / 树脂 / 搪胶 ..."
+                  placeholder={t("detail.production.material.placeholder")}
                 />
               </label>
               <label className="detail-card__field">
-                <span>计划数量</span>
+                <span>{t("detail.production.quantity")}</span>
                 <input
                   type="text"
                   value={productionForm.quantity}
                   onChange={(event) => setProductionForm((prev) => ({ ...prev, quantity: event.target.value }))}
-                  placeholder="如 200 件"
+                  placeholder={t("detail.production.quantity.placeholder")}
                 />
               </label>
               <label className="detail-card__field">
-                <span>目标成本</span>
+                <span>{t("detail.production.budget")}</span>
                 <input
                   type="text"
                   value={productionForm.budget}
                   onChange={(event) => setProductionForm((prev) => ({ ...prev, budget: event.target.value }))}
-                  placeholder="例如：每件 120 元以内"
+                  placeholder={t("detail.production.budget.placeholder")}
                 />
               </label>
               <label className="detail-card__field">
-                <span>期望交付时间</span>
+                <span>{t("detail.production.timeline")}</span>
                 <input
                   type="text"
                   value={productionForm.timeline}
                   onChange={(event) => setProductionForm((prev) => ({ ...prev, timeline: event.target.value }))}
-                  placeholder="如 2025 年 3 月"
+                  placeholder={t("detail.production.timeline.placeholder")}
                 />
               </label>
               <label className="detail-card__field detail-card__field--full">
-                <span>其他需求</span>
+                <span>{t("detail.production.notes")}</span>
                 <textarea
                   value={productionForm.notes}
                   onChange={(event) => setProductionForm((prev) => ({ ...prev, notes: event.target.value }))}
-                  placeholder="请补充特殊工艺、包装需求或合作方式。"
+                  placeholder={t("detail.production.notes.placeholder")}
                   rows={4}
                 />
               </label>
             </div>
             <button type="submit" className="primary-btn detail-card__cta" disabled={isProcessing}>
-              提交问卷
+              {t("detail.production.submit")}
             </button>
           </form>
         </div>

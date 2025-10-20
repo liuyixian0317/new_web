@@ -1,4 +1,11 @@
+import type { Locale } from "./i18n";
+
 export type PresetCategory = "style" | "material";
+
+export interface PresetTranslations {
+  name?: Partial<Record<Locale, string>>;
+  prompt?: Partial<Record<Locale, string>>;
+}
 
 export interface Preset {
   id: string;
@@ -7,6 +14,7 @@ export interface Preset {
   thumbnail: string;
   category: PresetCategory;
   isSystem?: boolean;
+  translations?: PresetTranslations;
 }
 
 export interface GenerationTask {

@@ -1,3 +1,4 @@
+import { useTranslation } from "../i18n";
 import type { Preset } from "../types";
 import "./PresetCard.css";
 
@@ -10,31 +11,28 @@ interface PresetCardProps {
   onFavorite?: (preset: Preset) => void;
 }
 
-function PresetCard({
-  preset,
-  selected,
-  onToggle,
-  onEdit,
-  onDelete,
-  onFavorite
-}: PresetCardProps) {
+function PresetCard({ preset, selected, onToggle, onEdit, onDelete, onFavorite }: PresetCardProps) {
+  const { t, locale } = useTranslation();
+  const displayName = preset.translations?.name?.[locale] ?? preset.name;
+  const displayPrompt = preset.translations?.prompt?.[locale] ?? preset.prompt;
+
   return (
     <div className={`preset-card ${selected ? "preset-card--selected" : ""}`}>
       <button type="button" className="preset-card__select" onClick={() => onToggle(preset)}>
-        <img src={preset.thumbnail} alt={preset.name} />
+        <img src={preset.thumbnail} alt={displayName} />
         <div className="preset-card__content">
           <div className="preset-card__heading">
-            <div className="preset-card__name">{preset.name}</div>
+            <div className="preset-card__name">{displayName}</div>
             <span
               className={
                 preset.isSystem ? "preset-card__badge preset-card__badge--system" : "preset-card__badge"
               }
             >
-              {preset.isSystem ? "系统" : "自定义"}
+              {preset.isSystem ? t("preset.card.system") : t("preset.card.custom")}
             </span>
           </div>
-          <p className="preset-card__prompt" title={preset.prompt}>
-            {preset.prompt}
+          <p className="preset-card__prompt" title={displayPrompt}>
+            {displayPrompt}
           </p>
         </div>
       </button>
@@ -44,7 +42,7 @@ function PresetCard({
             type="button"
             className="icon-btn"
             onClick={() => onFavorite?.(preset)}
-            title="收藏到我的预设"
+            title={t("preset.card.favorite")}
           >
             ☆
           </button>
@@ -54,7 +52,7 @@ function PresetCard({
               type="button"
               className="icon-btn"
               onClick={() => onEdit?.(preset)}
-              title="编辑预设"
+              title={t("preset.card.edit")}
             >
               ✎
             </button>
@@ -62,7 +60,7 @@ function PresetCard({
               type="button"
               className="icon-btn icon-btn--danger"
               onClick={() => onDelete?.(preset)}
-              title="删除预设"
+              title={t("preset.card.delete")}
             >
               ⌫
             </button>

@@ -53,6 +53,30 @@
   color: #facc15;
 }
 
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.language-toggle {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.6);
+  color: rgba(226, 232, 240, 0.9);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.language-toggle:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background: rgba(15, 23, 42, 0.75);
+}
+
 .primary-btn {
   background: linear-gradient(135deg, #facc15, #f97316);
   color: #0b1120;
@@ -81,5 +105,10 @@
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
+  }
+
+  .app-header__actions {
+    width: 100%;
+    justify-content: center;
   }
 }

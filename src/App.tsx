@@ -13,6 +13,7 @@ import {
 } from "./constants/presets";
 import type { GeneratedArtwork, GenerationTask, Preset } from "./types";
 import "./styles/app.css";
+import { useTranslation } from "./i18n";
 
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
 const clampGenerationCount = (value: number) => Math.min(10, Math.max(1, Math.round(value)));
@@ -140,7 +141,7 @@ const normalizeSeedDreamArtworks = (payload: unknown, taskId: string): Generated
 
 const requestSeedDream = async (taskId: string, prompt: string) => {
   if (!seedDreamConfigured || !seedDreamApiKey) {
-    throw new Error("SeedDream 接口未配置");
+    throw new Error("SeedDream API is not configured");
   }
 
   const requestBody = {
@@ -177,7 +178,7 @@ const requestSeedDream = async (taskId: string, prompt: string) => {
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
     console.error("[SeedDream] request failed", { status: response.status, errorText });
-    throw new Error(`SeedDream 请求失败: ${response.status}`);
+    throw new Error(`SeedDream request failed: ${response.status}`);
   }
 
   const payload = await response.json().catch((error: unknown) => {
@@ -191,7 +192,7 @@ const requestSeedDream = async (taskId: string, prompt: string) => {
   console.info("[SeedDream] parsed artworks", artworks);
 
   if (artworks.length === 0) {
-    throw new Error("SeedDream 返回为空");
+    throw new Error("SeedDream response was empty");
   }
 
   return artworks;
@@ -204,6 +205,7 @@ interface PresetModalState {
 }
 
 function App() {
+  const { t, locale } = useTranslation();
   const [promptText, setPromptText] = useState("");
   const [generationCount, setGenerationCount] = useState(1);
   const [customStylePresets, setCustomStylePresets] = useState<Preset[]>([]);
@@ -212,7 +214,7 @@ function App() {
   const [generationTasks, setGenerationTasks] = useState<GenerationTask[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("准备中");
+  const [statusMessage, setStatusMessage] = useState(() => t("gallery.status.idle"));
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [modalState, setModalState] = useState<PresetModalState | null>(null);
   const [detailSnapshot, setDetailSnapshot] = useState<ArtworkDetailSnapshot | null>(() =>
@@ -232,6 +234,12 @@ function App() {
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  useEffect(() => {
+    if (!isGenerating && generationTasks.length === 0) {
+      setStatusMessage(t("gallery.status.idle"));
+    }
+  }, [generationTasks.length, isGenerating, locale, t]);
 
   const allPresets = useMemo(() => {
     return [
@@ -268,7 +276,7 @@ function App() {
     const exists = collection.some((item) => item.prompt === preset.prompt && item.name === preset.name);
 
     if (exists) {
-      setToastMessage("该预设已收藏");
+      setToastMessage(t("toast.preset.duplicate"));
       return;
     }
 
@@ -279,7 +287,7 @@ function App() {
     };
     setter([newPreset, ...collection]);
     setModalState(null);
-    setToastMessage("已收藏到我的预设");
+    setToastMessage(t("toast.preset.saved"));
   };
 
   const handleClearPresets = () => {
@@ -292,14 +300,14 @@ function App() {
 
   const handleSelectHistoryTask = (task: GenerationTask) => {
     ensureActiveTask(task.id);
-    setToastMessage(`已切换到 ${task.createdAt} 的结果`);
+    setToastMessage(t("toast.history.switched", { date: task.createdAt }));
   };
 
   const handleDeletePreset = (preset: Preset) => {
     const setter = preset.category === "style" ? setCustomStylePresets : setCustomMaterialPresets;
     setter((prev) => prev.filter((item) => item.id !== preset.id));
     setSelectedPresetIds((prev) => prev.filter((id) => id !== preset.id));
-    setToastMessage("预设已删除");
+    setToastMessage(t("toast.preset.deleted"));
   };
 
   const handleSavePreset = (values: { name: string; prompt: string; thumbnail: string }) => {
@@ -325,7 +333,7 @@ function App() {
     });
 
     setModalState(null);
-    setToastMessage(editingPreset ? "预设已更新" : "预设已创建");
+    setToastMessage(editingPreset ? t("toast.preset.updated") : t("toast.preset.created"));
   };
 
   const startGeneration = async ({
@@ -341,13 +349,13 @@ function App() {
   }) => {
     const cleanPrompt = prompt.trim();
     if (!cleanPrompt) {
-      alert("请先输入 Prompt");
+      alert(t("alert.prompt.required"));
       return;
     }
 
     const count = clampGenerationCount(requestedCount ?? generationCount);
     const taskId = uuid();
-    const createdAt = new Intl.DateTimeFormat("zh-CN", {
+    const createdAt = new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
       dateStyle: "short",
       timeStyle: "short"
     }).format(new Date());
@@ -365,15 +373,15 @@ function App() {
 
     setIsGenerating(true);
     const initialStatus = seedDreamConfigured
-      ? `SeedDream 4.0 正在生成（${count} 组并行）...`
-      : "未配置 SeedDream，使用占位图展示";
+      ? t("toast.generation.pending", { count })
+      : t("toast.generation.mock");
     setStatusMessage(initialStatus);
     setToastMessage(initialStatus);
     setGenerationTasks((prev) => [pendingTask, ...prev]);
     ensureActiveTask(taskId);
 
     if (!seedDreamConfigured) {
-      const message = "未配置 SeedDream 接口";
+      const message = t("toast.seed.unconfigured");
       setStatusMessage(message);
       setToastMessage(message);
       setGenerationTasks((prev) =>
@@ -431,18 +439,20 @@ function App() {
 
       let message: string;
       if (aggregated.length === 0) {
-        message = "生成失败，请稍后重试";
+        message = t("toast.generation.failed");
       } else if (failureCount > 0) {
-        message = `部分成功：获得 ${aggregated.length} 张作品，${failureCount} 组请求失败`;
+        message = t("toast.generation.partial", { success: aggregated.length, failed: failureCount });
       } else {
-        message = `生成完成，共获得 ${aggregated.length} 张作品`;
+        message = t("toast.generation.success", { count: aggregated.length });
       }
       setStatusMessage(message);
       setToastMessage(message);
     } catch (error) {
       console.error("[SeedDream] generation failed", error);
       const errorMessage =
-        error instanceof Error ? `生成失败：${error.message}` : "生成失败，请稍后重试";
+        error instanceof Error
+          ? t("toast.generation.failedWithReason", { reason: error.message })
+          : t("toast.generation.failed");
       setGenerationTasks((prev) =>
         prev.map((task) =>
           task.id === taskId
@@ -463,11 +473,14 @@ function App() {
 
   const handleGenerate = async () => {
     if (!promptText.trim() && selectedPresets.length === 0) {
-      alert("请先输入 Prompt 或至少选择一个预设");
+      alert(t("alert.promptOrPreset.required"));
       return;
     }
 
-    const mergedPrompt = [promptText.trim(), ...selectedPresets.map((preset) => preset.prompt)]
+    const presetPrompts = selectedPresets.map(
+      (preset) => preset.translations?.prompt?.[locale] ?? preset.prompt
+    );
+    const mergedPrompt = [promptText.trim(), ...presetPrompts]
       .filter(Boolean)
       .join(", ");
 
@@ -488,9 +501,9 @@ function App() {
   const handleCopyLink = async (artwork: { imageUrl: string }) => {
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(artwork.imageUrl);
-      setToastMessage("链接已复制");
+      setToastMessage(t("toast.copy"));
     } else {
-      prompt("复制以下链接", artwork.imageUrl);
+      prompt(t("prompt.copyLink"), artwork.imageUrl);
     }
   };
 
@@ -531,13 +544,13 @@ function App() {
     await startGeneration({
       prompt,
       requestedCount: count,
-      origin: `精修 ${detailSnapshot.artwork.id}`,
+      origin: t("history.origin.refine", { id: detailSnapshot.artwork.id }),
       sourceArtworkId: detailSnapshot.artwork.id
     });
   };
 
   const handleRequest3DMock = () => {
-    setToastMessage("3D 模型占位图已生成，后端能力上线后将展示真实模型");
+    setToastMessage(t("toast.detail.placeholder"));
   };
 
   const handleSubmitProductionForm = (payload: ProductionFormValues) => {
@@ -545,7 +558,7 @@ function App() {
       artworkId: detailSnapshot?.artwork.id,
       ...payload
     });
-    setToastMessage("问卷已提交，我们将尽快与您联系");
+    setToastMessage(t("toast.detail.form"));
   };
 
   const clearStoredDetailSnapshot = () => {
@@ -623,7 +636,7 @@ function App() {
 
           <PresetSection
             sectionId="style-presets"
-            title="选择潮玩风格"
+            title={t("preset.section.styleTitle")}
             category="style"
             systemPresets={SYSTEM_STYLE_PRESETS}
             customPresets={customStylePresets}
@@ -637,7 +650,7 @@ function App() {
 
           <PresetSection
             sectionId="material-presets"
-            title="选择生产材质"
+            title={t("preset.section.materialTitle")}
             category="material"
             systemPresets={SYSTEM_MATERIAL_PRESETS}
             customPresets={customMaterialPresets}
@@ -656,7 +669,7 @@ function App() {
       {modalState?.open && (
         <Modal
           open
-          title={modalState.editingPreset ? "编辑预设" : "新建预设"}
+          title={modalState.editingPreset ? t("modal.editPreset") : t("modal.createPreset")}
           onClose={() => setModalState(null)}
         >
           <PresetEditorForm

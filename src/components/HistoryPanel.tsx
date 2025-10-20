@@ -1,3 +1,4 @@
+import { useTranslation } from "../i18n";
 import type { GenerationTask } from "../types";
 import "./HistoryPanel.css";
 
@@ -8,13 +9,15 @@ interface HistoryPanelProps {
 }
 
 function HistoryPanel({ sectionId, tasks, onSelectTask }: HistoryPanelProps) {
+  const { t } = useTranslation();
+
   return (
     <aside id={sectionId} className="history-panel">
-      <h2>生成记录</h2>
-      <p className="history-panel__desc">快速回看历史生成任务，复用灵感。</p>
+      <h2>{t("history.title")}</h2>
+      <p className="history-panel__desc">{t("history.subtitle")}</p>
       <div className="history-panel__list">
         {tasks.length === 0 ? (
-          <p className="history-panel__empty">暂无生成记录。</p>
+          <p className="history-panel__empty">{t("history.empty")}</p>
         ) : (
           tasks.map((task) => (
             <button
@@ -29,7 +32,7 @@ function HistoryPanel({ sectionId, tasks, onSelectTask }: HistoryPanelProps) {
                   {task.origin && <span className="history-panel__badge">{task.origin}</span>}
                   {task.requestedCount && (
                     <span className="history-panel__badge history-panel__badge--neutral">
-                      {task.requestedCount} 组
+                      {t("history.batch", { count: task.requestedCount })}
                     </span>
                   )}
                 </div>
@@ -37,7 +40,9 @@ function HistoryPanel({ sectionId, tasks, onSelectTask }: HistoryPanelProps) {
               <p className="history-panel__prompt" title={task.prompt}>
                 {task.prompt}
               </p>
-              <span className="history-panel__status">{task.results.length} 张作品</span>
+              <span className="history-panel__status">
+                {t("history.statusImageCount", { count: task.results.length })}
+              </span>
             </button>
           ))
         )}

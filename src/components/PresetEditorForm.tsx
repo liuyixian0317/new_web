@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "../i18n";
 import type { Preset } from "../types";
 
 interface PresetEditorFormProps {
@@ -14,13 +15,14 @@ const DEFAULT_THUMBNAILS = [
 ];
 
 function PresetEditorForm({ initialValue, onSubmit, onCancel }: PresetEditorFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialValue.name ?? "");
   const [prompt, setPrompt] = useState(initialValue.prompt ?? "");
   const [thumbnail, setThumbnail] = useState(initialValue.thumbnail ?? DEFAULT_THUMBNAILS[0]);
 
   const handleSubmit = () => {
     if (!name.trim() || !prompt.trim()) {
-      alert("请填写完整的预设名称和提示词");
+      alert(t("preset.form.validation"));
       return;
     }
 
@@ -30,31 +32,35 @@ function PresetEditorForm({ initialValue, onSubmit, onCancel }: PresetEditorForm
   return (
     <>
       <label>
-        预设名称
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="输入一个易识别的名称" />
-      </label>
-      <label>
-        Prompt 提示词
-        <textarea
-          value={prompt}
-          onChange={(event) => setPrompt(event.target.value)}
-          placeholder="例如：adorable chibi creature, glossy finish, holographic patterns"
+        {t("preset.form.name")}
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder={t("preset.form.name.placeholder")}
         />
       </label>
       <label>
-        缩略图地址（可选）
+        {t("preset.form.prompt")}
+        <textarea
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          placeholder={t("preset.form.prompt.placeholder")}
+        />
+      </label>
+      <label>
+        {t("preset.form.thumbnail")}
         <input
           value={thumbnail}
           onChange={(event) => setThumbnail(event.target.value)}
-          placeholder="放一张示意图 URL，或使用默认"
+          placeholder={t("preset.form.thumbnail.placeholder")}
         />
       </label>
       <div className="modal__actions">
         <button type="button" className="ghost-btn" onClick={onCancel}>
-          取消
+          {t("preset.form.cancel")}
         </button>
         <button type="button" className="secondary-btn" onClick={handleSubmit}>
-          保存预设
+          {t("preset.form.save")}
         </button>
       </div>
     </>
