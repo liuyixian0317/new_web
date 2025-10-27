@@ -1,149 +1,133 @@
-# MIDAS SHINY
+# 潮玩造梦师 2.0
 
-MIDAS SHINY 面向潮玩设计师、艺术创作者与收藏爱好者的 Web 端 AI 潮玩设计生成工具原型。项目遵循 `request.md` 中的产品需求，提供 Prompt 输入、风格/材质预设管理、生成结果展示与历史记录等核心体验，界面采用深色赛博风格与响应式布局，方便后续接入 SeedDream 4.0 等实际模型服务。
+全新版本的潮玩造梦师围绕“提示词输入 → Agent 协作 → 最终渲染”设计了三段式体验流程。前端使用 React + TypeScript，实现了多页面路由、Agent 会话管理以及与后台 Python 服务的接口对接；后端负责大模型推理、知识检索与图片生成，使用户可以一步步完善需求并获得高清潮玩渲染图。
 
-> 📷 建议在完成真实 API 接入与首轮调试后补充高分辨率页面截图（可以在 `docs/` 目录添加图片，并在本文档插入）。当前生成结果仍使用占位符图像；风格与材质预设示意图已替换为品牌化缩略图。
+> 本仓库仅包含前端实现与知识库示例，Agent 推理与生图模型需通过独立的 Python 服务提供。
 
 ## 技术栈
 
-- **前端框架**：React 18 + TypeScript
-- **构建工具**：Vite 5（默认监听 `5173` 端口，支持 HMR）
-- **样式方案**：原子化 CSS 变量 + 手写组件样式（CSS Modules 风格隔离，面向深色 UI）
-- **状态管理**：React 内部状态（`useState` / `useMemo`）
-
-## 环境要求
-
-| 工具 | 版本建议 |
-| --- | --- |
-| Node.js | ≥ 18.0.0（建议使用 LTS 版本） |
-| npm / pnpm / yarn | 任选其一，示例使用 `npm` |
+- **框架**：React 18 + TypeScript
+- **构建工具**：Vite 5
+- **样式**：定制化深色主题 CSS
+- **状态管理**：React Hooks（`useState` / `useEffect` / `useMemo`）
 
 ## 快速开始
 
-1. 安装依赖
+```bash
+# 1. 安装依赖（需要 Node.js ≥ 18）
+npm install
 
-   ```bash
-   npm install
-   ```
+# 2. 启动开发服务器
+npm run dev
 
-2. 启动开发服务器（默认监听 `http://localhost:5173`，对局域网开放）
+# 3. 构建生产包
+npm run build
 
-   ```bash
-   npm run dev
-   ```
+# 4. 预览生产构建
+npm run preview
 
-3. 构建生产包
+# 5. 类型检查
+npm run lint
+```
 
-   ```bash
-   npm run build
-   ```
+> 也可以将上述命令替换为 `pnpm` 或 `yarn`。首次安装请确保能够访问 npm 镜像。
 
-4. 预览生产构建结果（先执行 `npm run build`）
+## 环境变量配置
 
-   ```bash
-   npm run preview
-   ```
+在终端中执行以下命令，将 API Key 注入当前会话的环境变量：
 
-5. 类型检查（无输出即通过）
-
-   ```bash
-   npm run lint
-   ```
-
-> 若希望使用 `pnpm` 或 `yarn`，仅需将上述命令替换为对应的包管理器语法。首次安装依赖需保证可以访问 npm 官方源或配置镜像。
+```bash
+export ARK_API_KEY='17e900d2-979f-4cd1-8031-5c19ed387035'
+```
 
 ## 目录结构
 
 ```
 new_web/
-├── index.html               # Vite 入口 HTML
-├── package.json             # 项目依赖与脚本定义
-├── tsconfig*.json           # TypeScript 编译配置
-├── vite.config.ts           # Vite 配置（含 host/port）
+├── knowledge/                 # 潮玩知识库示例，供 Python Agent 检索
+│   ├── README.md
+│   └── toy-knowledge.json
 ├── public/
-│   └── favicon.svg          # Favicon 占位符
+│   └── favicon.svg
 ├── src/
-│   ├── App.tsx              # 页面入口，组装核心模块
-│   ├── main.tsx             # React 渲染入口
-│   ├── types.ts             # 统一定义生成任务/预设类型
-│   ├── constants/
-│   │   └── presets.ts       # 系统风格与材质预设示例
-│   ├── components/
-│   │   ├── AppHeader.*      # 顶部导航与 CTA
-│   │   ├── PromptComposer.* # Prompt 输入与预设标签
-│   │   ├── PresetSection.*  # 风格/材质预设列表
-│   │   ├── PresetCard.*     # 单个预设卡片（收藏/编辑/删除）
-│   │   ├── PresetEditorForm.tsx # 预设增改弹窗表单
-│   │   ├── Modal.*          # 通用模态框容器
-│   │   ├── GenerationGallery.* # 生成结果展示区
-│   │   └── HistoryPanel.*   # 生成历史记录侧边栏
-│   └── styles/
-│       ├── index.css        # 全局主题、字体、滚动条
-│       └── app.css          # 布局骨架与提示 Toast
-├── README.md                # 项目使用说明（本文档）
-└── request.md               # 产品需求原文（仅供参考）
+│   ├── api/
+│   │   └── agent.ts           # 前端调用 Python Agent 服务的接口封装
+│   ├── pages/
+│   │   ├── PromptIntakePage.tsx
+│   │   ├── AgentCollaborationPage.tsx
+│   │   └── FinalGenerationPage.tsx
+│   ├── styles/
+│   │   └── agent-flow.css     # 三页式体验的风格样式
+│   ├── App.tsx                # 内置轻量路由与页面装配
+│   ├── main.tsx               # React 入口
+│   ├── types.ts               # 通用数据类型定义
+│   └── i18n.tsx               # 语言环境（保留自旧版）
+├── package.json
+├── tsconfig*.json
+├── vite.config.ts
+└── TODO.txt
 ```
 
-## 功能说明
+旧版生成器仍保留在 `src/App2.tsx` 及相关组件中，可按需参考或复用。
 
-- **创意输入（Prompt Composer）**：支持 500 字内多行输入，统计字数，结合选中预设生成最终 Prompt。提供清空预设按钮与使用说明。
-- **预设管理（Preset Section）**：风格 / 材质分区，包含系统预设和“我的预设”两个标签页；支持收藏官方预设、模态框内手动新增/编辑/删除自定义预设，并即时反映在 Prompt 组合中。
-- **生成流程（Generation Gallery）**：生成时展示状态提示，完成后展示多张图片卡片（当前使用占位符图片），每张卡片附带 Seed 与尺寸信息、下载与复制链接按钮。
-- **历史记录（History Panel）**：按时间倒序展示生成任务，可点击快速回溯查看旧结果，同时触发提示 Toast。
-- **导航与反馈**：顶部导航锚点便于快速定位不同模块；统一 Toast 反馈收藏、删除、复制、切换等操作；响应式布局在 ≥768px 屏幕上表现最佳。
+## 核心页面与流程
 
-## SeedDream 4.0 API 接入指引
+1. **创意录入页（PromptIntakePage）**  
+   - 用户描述心仪的潮玩设定，可补充备注并上传灵感图。  
+   - 提交后调用 `POST /api/agent/sessions` 创建会话，返回会话 ID。
 
-当前项目使用 `setTimeout` 和占位图模拟 AI 生成流程。接入真实模型服务时，可参考以下步骤：
+2. **Agent 协作页（AgentCollaborationPage）**  
+   - 左侧为用户与 AI Agent 的对话区，支持持续补充需求。  
+   - 右侧展示 Agent 的设计计划、引用的知识条目及生成的草图。  
+   - 调用 `GET /api/agent/sessions/:id`、`GET /messages` 读取历史，`POST /messages` 发送新消息。
 
-1. 新增环境变量（在项目根目录创建 `.env.local`）：
+3. **最终生成页（FinalGenerationPage）**  
+   - 汇总已确认的需求，展示最终 prompt。  
+   - 通过 `POST /api/agent/sessions/:id/finalize` 触发 Python 后端整合 prompt 并调用生图模型。  
+   - 返回高清渲染图，可下载或复制 prompt 到其他工具使用。
 
-   ```bash
-   VITE_SEEDDREAM_API_URL=https://api.example.com/v1/generate
-   VITE_SEEDDREAM_API_KEY=your_api_key_here
-   ```
+整个流程遵循“前端收集、后端推理、前端展示”的职责划分，确保所有模型与知识检索逻辑由后台统一维护。
 
-2. 将 `src/App.tsx` 中 `handleGenerate` 的 `setTimeout` 替换为真实 `fetch` 请求，示例：
+## 前端与 Python Agent 服务接口约定
 
-   ```ts
-   const response = await fetch(import.meta.env.VITE_SEEDDREAM_API_URL, {
-     method: "POST",
-     headers: {
-       "Content-Type": "application/json",
-       Authorization: `Bearer ${import.meta.env.VITE_SEEDDREAM_API_KEY}`
-     },
-     body: JSON.stringify({
-       prompt: mergedPrompt,
-       size: "512x640",
-       seed: crypto.randomUUID()
-     })
-   });
-   const payload = await response.json();
-   // 将 payload 解析为 GeneratedArtwork[]，更新任务状态
-   ```
+所有接口统一以 `VITE_AGENT_API_BASE` 为前缀（默认 `/api/agent`），请求与响应均为 JSON，上传图片使用 `multipart/form-data`。
 
-3. 若接口返回二进制图片，可将其转换为 `Blob` 并使用 `URL.createObjectURL` 生成可下载链接，或存储为自建对象存储地址。
+> 本地开发若尚未启动 Python Agent，可保持 `VITE_AGENT_USE_MOCK` 默认为开启状态（开发环境自动启用），前端会使用内置的模拟对话与占位图，避免 404 错误。部署连接真实后端时，可在 `.env` 中声明 `VITE_AGENT_USE_MOCK=false`。
 
-4. 根据业务需要补充错误处理、重试机制与生成进度轮询等。
+| Endpoint | 方法 | 请求参数 | 返回示例 |
+| --- | --- | --- | --- |
+| `/sessions` | `POST` | `prompt`、`notes?`、`locale?`、`referenceImage?` | `AgentSessionSummary` |
+| `/sessions/{id}` | `GET` | – | `AgentSessionDetail` |
+| `/sessions/{id}/messages` | `GET` | – | `AgentMessage[]` |
+| `/sessions/{id}/messages` | `POST` | `message`、`attachments?[]` | `{ message, plan?, artworks? }` |
+| `/sessions/{id}/finalize` | `POST` | – | `{ finalPrompt, generatedArtworks, session }` |
+| `/knowledge` | `GET` | – | `KnowledgeEntry[]`（可由后端直接读取 `knowledge/` 目录） |
 
-## 自定义与扩展
+### 数据结构（节选）
 
-- **组件定制**：`src/components` 目录内所有模块均为函数式组件，可按需拆分或替换样式文件，已有 className 便于接入 Tailwind、CSS-in-JS 等方案。
-- **预设数据源**：系统预设暂存于 `src/constants/presets.ts`，生产环境建议改为接口拉取或 CMS 管理，并为缩略图替换真实示意图。
-- **国际化**：界面文案统一存放在组件内部，可结合 `i18next` 等库引出配置，方便拓展英文或其他语言版本。
-- **状态持久化**：可后续接入 `localStorage` / IndexedDB 记录“我的预设”与历史任务，或使用状态管理库（Redux/Zustand）提升可维护性。
+- `AgentSessionSummary`：`{ id, initialPrompt, status, createdAt, referenceImageUrl?, notes? }`
+- `AgentPlanStep`：`{ id, title, detail?, status }`
+- `AgentMessage`：`{ id, role, content, createdAt, attachments? }`
+- `GeneratedArtwork`：`{ id, imageUrl, seed?, sizeLabel? }`
+- `FinalizeSessionResponse`：`{ finalPrompt, generatedArtworks, session }`
 
-## 已知限制
+接口出错时建议返回 `{ message: string }`，前端会显示在页面中。
 
-- 生成结果使用在线占位图 `dummyimage.com`，需要真实模型或素材时请替换为正式资源；如需离线环境，可将图片改为本地静态资源。
-- 未包含实际用户体系、鉴权与限流策略，部署前需补齐登录、额度与错误提示等逻辑。
-- 未默认集成自动化测试，可依据业务复杂度补充组件单测或端到端测试。
+## 知识库维护指引
 
-## 后续建议
+`knowledge/` 目录示例了推荐的数据形态：以结构化 JSON 列出主题、摘要、标签与可直接复用的 prompt 片段。后端可根据会话内容检索最相关的条目，并在对话与最终 prompt 中引用。
 
-1. 接入后端推理服务（SeedDream 4.0）并完善错误提示、重试与队列管理。
-2. 增加生成参数（尺寸、批次数、随机种子）配置面板，支持更多自定义选项。
-3. 建立素材资产库与图像优化策略，提升加载与下载体验。
-4. 编写组件级测试与 UI 回归流程，确保迭代稳定性。
+为了便于扩展，可遵循以下约定：
 
-祝项目顺利，欢迎继续拓展体验或提出新的需求 🙌
+- 新增主题时更新 `toy-knowledge.json` 或拆分为按类别划分的文件；
+- 保持 `id` 唯一，用于前后端同步引用；
+- 如需图文等富媒体，可在此目录放置原始素材，并在后端转换为可访问的 URL。
+
+## 已知限制与后续工作
+
+- 当前仓库未包含 Python Agent 与生图模型，需要按接口约定自行实现。  
+- 三个页面的路由通过 `history.pushState` 自行管理，不依赖 `react-router`；如需更复杂的导航可替换为成熟路由方案。  
+- 未接入用户体系、存储与权限控制，部署前需补齐鉴权、限流等能力。  
+- 建议在后端补充对话记录持久化、知识检索策略（如向量检索）、生成状态轮询等功能。
+
+如在接入后端接口时遇到问题，可优先检视网络面板中的请求与返回内容，或根据上述接口约定进行排查。欢迎继续拓展更多玩法与生产流程的定制能力。

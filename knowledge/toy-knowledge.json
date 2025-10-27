@@ -1,0 +1,35 @@
+[
+  {
+    "id": "astro-bear",
+    "title": "太空熊系列",
+    "summary": "灵感来源于 70 年代复古太空探索，主体为背着喷气背包的熊形角色，采用透明外壳与发光内芯营造漂浮感。",
+    "tags": ["科幻", "透明材质", "发光", "动物角色"],
+    "relatedPrompts": [
+      "retro space explorer bear with transparent resin body",
+      "internal galaxy nebula illumination, floating star particles",
+      "chrome jetpack with neon edge lights"
+    ]
+  },
+  {
+    "id": "neo-chinatown",
+    "title": "霓虹唐潮街区",
+    "summary": "将赛博朋克霓虹美学与中国传统街景融合，强调霓虹牌匾、龙纹灯笼、磨砂金属与玻璃的材质对比。",
+    "tags": ["国潮", "赛博朋克", "夜景", "街区场景"],
+    "relatedPrompts": [
+      "cyberpunk chinatown night market diorama",
+      "dragon lanterns, holographic signboards, reflective wet ground",
+      "mix of brushed metal, translucent acrylic, floating LED calligraphy"
+    ]
+  },
+  {
+    "id": "organic-mech",
+    "title": "生物机甲融合体",
+    "summary": "结合机甲结构与自然元素，强调植物蔓延、骨骼装甲、可动关节，适合高端收藏级别的潮玩形态。",
+    "tags": ["机甲", "自然", "高端收藏", "可动结构"],
+    "relatedPrompts": [
+      "biomechanical warrior with ivy wrapping joints",
+      "matte ceramic armor plates with organic veins",
+      "modular articulated limbs, high gloss resin highlights"
+    ]
+  }
+]

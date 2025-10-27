@@ -33,4 +33,81 @@ export interface GeneratedArtwork {
   imageUrl: string;
   seed?: string;
   sizeLabel?: string;
+  prompt?: string;
+  error?: string;
+}
+
+export type AppPage = "prompt" | "agent" | "final";
+
+export type AgentRole = "user" | "assistant" | "system";
+
+export interface AgentAttachment {
+  type: "image" | "file";
+  url: string;
+  description?: string;
+  name?: string;
+}
+
+export interface AgentMessage {
+  id: string;
+  role: AgentRole;
+  content: string;
+  createdAt: string;
+  attachments?: AgentAttachment[];
+  planStepId?: string;
+  thinkingTrace?: string;
+  action?: string;
+  prompts?: string[];
+}
+
+export type AgentPlanStatus = "pending" | "active" | "completed";
+
+export interface AgentPlanStep {
+  id: string;
+  title: string;
+  detail?: string;
+  status: AgentPlanStatus;
+}
+
+export interface AgentSessionSummary {
+  id: string;
+  initialPrompt: string;
+  createdAt: string;
+  status: "collecting" | "in_progress" | "finalized";
+  referenceImageUrl?: string;
+  notes?: string;
+}
+
+export interface AgentSessionDetail extends AgentSessionSummary {
+  plan: AgentPlanStep[];
+  messages: AgentMessage[];
+  knowledgeReferences?: string[];
+  finalPrompt?: string;
+  generatedArtworks?: GeneratedArtwork[];
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  relatedPrompts: string[];
+}
+
+export interface CreateSessionRequest {
+  prompt: string;
+  referenceImage?: File | null;
+  notes?: string;
+  locale?: string;
+}
+
+export interface SendAgentMessageRequest {
+  message: string;
+  attachments?: File[];
+}
+
+export interface FinalizeSessionResponse {
+  session: AgentSessionDetail;
+  finalPrompt: string;
+  generatedArtworks: GeneratedArtwork[];
 }

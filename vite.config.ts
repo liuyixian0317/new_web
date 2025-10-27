@@ -8,29 +8,36 @@ export default defineConfig(({ mode }) => {
   const seedDreamTarget = env.VITE_SEEDDREAM_API_URL;
   const seedDreamApiKey = env.VITE_SEEDDREAM_API_KEY;
   const proxyPath = env.VITE_SEEDDREAM_PROXY_PATH || "/seed-dream";
+  const agentTarget = env.VITE_AGENT_PROXY_TARGET || "http://127.0.0.1:8000";
 
   const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  const proxy = seedDreamTarget
-    ? {
-        [proxyPath]: {
-          target: seedDreamTarget,
-          changeOrigin: true,
-          secure: true,
-          rewrite: (path: string) => path.replace(new RegExp(`^${escapeRegex(proxyPath)}`), ""),
-          configure: (proxyServer: any) => {
-            proxyServer.on("proxyReq", (proxyReq: any) => {
-              if (seedDreamApiKey) {
-                proxyReq.setHeader("Authorization", `Bearer ${seedDreamApiKey}`);
-              }
-              if (!proxyReq.getHeader("content-type")) {
-                proxyReq.setHeader("Content-Type", "application/json");
-              }
-            });
+  const proxy: Record<string, any> = {
+    "/api/agent": {
+      target: agentTarget,
+      changeOrigin: true,
+      secure: false
+    }
+  };
+
+  if (seedDreamTarget) {
+    proxy[proxyPath] = {
+      target: seedDreamTarget,
+      changeOrigin: true,
+      secure: true,
+      rewrite: (path: string) => path.replace(new RegExp(`^${escapeRegex(proxyPath)}`), ""),
+      configure: (proxyServer: any) => {
+        proxyServer.on("proxyReq", (proxyReq: any) => {
+          if (seedDreamApiKey) {
+            proxyReq.setHeader("Authorization", `Bearer ${seedDreamApiKey}`);
           }
-        }
+          if (!proxyReq.getHeader("content-type")) {
+            proxyReq.setHeader("Content-Type", "application/json");
+          }
+        });
       }
-    : undefined;
+    };
+  }
 
   return {
     plugins: [react()],

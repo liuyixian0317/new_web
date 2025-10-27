@@ -57,7 +57,12 @@
    VITE_SEEDDREAM_MODEL=doubao-seedream-4-0-250828
    # 开发阶段代理路径，需与 vite.config.ts 中保持一致
    VITE_SEEDDREAM_PROXY_PATH=/seed-dream
-   ```
+   # Agent 接口改为真实后端
+   VITE_AGENT_USE_MOCK=false
+   # 前端默认通过 Vite 代理转发至本地 Python 服务
+   VITE_AGENT_API_BASE=/api/agent
+   # 如需修改后端地址，可在 vite.config.ts 或增设 VITE_AGENT_PROXY_TARGET
+ ```
 2. **安全提示**：API Key 属于敏感信息，确保 `.env.local` 列入 `.gitignore`（项目已默认忽略）。生产环境建议通过 CI/CD 下发或部署平台提供的 Secret 管理。
 
 ## 4. 启动与验证
@@ -106,6 +111,13 @@
 - **端口占用**：若 `5173` 已被占用，可在 `package.json` 或执行命令时覆写 `--port`。
 - **SSL 或证书问题**：代理默认使用 HTTPS，可在 `vite.config.ts` 的 proxy 配置上调整 `secure` 选项。
 - **CORS 报错**：请确认通过本地代理发起请求（即访问 `/seed-dream` 路径），并重启 `npm run dev` 以应用新的代理配置。
+
+- **Agent 后端 404**：确保 Python 服务已启动。默认后端监听 `http://127.0.0.1:8000`，可执行：
+  ```bash
+  pip install fastapi uvicorn requests
+  uvicorn backend.server:app --reload --port 8000
+  ```
+  启动成功后访问 `http://127.0.0.1:8000/healthz` 应返回 `{"status": "ok"}`。若仍报 404，可暂时设置 `VITE_AGENT_USE_MOCK=true` 回到前端 Mock。
 
 - **处理vite问题** ：
 这是 npm 在处理 Rollup 的可选依赖时碰到的常见 bug，按提示清一次环境再装即可。
