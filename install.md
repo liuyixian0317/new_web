@@ -44,6 +44,7 @@
    ```bash
    npm install
    ```
+   - `package.json` 已包含 `react-markdown` 与 `remark-gfm` 等 Markdown 展示依赖，执行上述命令会自动装好，无需额外手动安装。
    - 如在中国大陆网络环境，可考虑使用 `npm config set registry https://registry.npmmirror.com` 提升安装速度。
 
 ## 3. 环境变量配置
