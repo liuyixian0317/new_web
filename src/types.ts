@@ -35,6 +35,7 @@ export interface GeneratedArtwork {
   sizeLabel?: string;
   prompt?: string;
   error?: string;
+  index?: number;
 }
 
 export type AppPage = "prompt" | "agent" | "final";
@@ -58,6 +59,7 @@ export interface AgentMessage {
   thinkingTrace?: string;
   action?: string;
   prompts?: string[];
+  requestedCount?: number;
 }
 
 export type AgentPlanStatus = "pending" | "active" | "completed";
@@ -76,6 +78,7 @@ export interface AgentSessionSummary {
   status: "collecting" | "in_progress" | "finalized";
   referenceImageUrl?: string;
   notes?: string;
+  requestedCount?: number;
 }
 
 export interface AgentSessionDetail extends AgentSessionSummary {
@@ -99,11 +102,13 @@ export interface CreateSessionRequest {
   referenceImage?: File | null;
   notes?: string;
   locale?: string;
+  requestedCount?: number;
 }
 
 export interface SendAgentMessageRequest {
   message: string;
   attachments?: File[];
+  requestedCount?: number;
 }
 
 export interface FinalizeSessionResponse {

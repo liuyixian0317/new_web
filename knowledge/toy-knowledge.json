@@ -1,35 +1,240 @@
-[
-  {
-    "id": "astro-bear",
-    "title": "太空熊系列",
-    "summary": "灵感来源于 70 年代复古太空探索，主体为背着喷气背包的熊形角色，采用透明外壳与发光内芯营造漂浮感。",
-    "tags": ["科幻", "透明材质", "发光", "动物角色"],
-    "relatedPrompts": [
-      "retro space explorer bear with transparent resin body",
-      "internal galaxy nebula illumination, floating star particles",
-      "chrome jetpack with neon edge lights"
-    ]
-  },
-  {
-    "id": "neo-chinatown",
-    "title": "霓虹唐潮街区",
-    "summary": "将赛博朋克霓虹美学与中国传统街景融合，强调霓虹牌匾、龙纹灯笼、磨砂金属与玻璃的材质对比。",
-    "tags": ["国潮", "赛博朋克", "夜景", "街区场景"],
-    "relatedPrompts": [
-      "cyberpunk chinatown night market diorama",
-      "dragon lanterns, holographic signboards, reflective wet ground",
-      "mix of brushed metal, translucent acrylic, floating LED calligraphy"
-    ]
-  },
-  {
-    "id": "organic-mech",
-    "title": "生物机甲融合体",
-    "summary": "结合机甲结构与自然元素，强调植物蔓延、骨骼装甲、可动关节，适合高端收藏级别的潮玩形态。",
-    "tags": ["机甲", "自然", "高端收藏", "可动结构"],
-    "relatedPrompts": [
-      "biomechanical warrior with ivy wrapping joints",
-      "matte ceramic armor plates with organic veins",
-      "modular articulated limbs, high gloss resin highlights"
-    ]
-  }
-]
+{
+  "styles": [
+    {
+      "id": "neo_pastel_atelier",
+      "name": "Neo Pastel Atelier",
+      "description": "Soft pastel gradients with clean silhouettes, inspired by boutique designer studios. Focuses on gentle light transitions and polished, friendly character forms.",
+      "idealFor": ["dreamy mascots", "fashion collaborations", "slice-of-life narratives"],
+      "colorPalette": "Powder blue, blush peach, lavender haze, ivory highlights.",
+      "recommendedMaterials": ["soft_vinyl_skin", "clear_resin_core"],
+      "promptKeywords": ["pastel gradient", "satin finish", "minimalist accessories", "designer art toy"]
+    },
+    {
+      "id": "techno_prism_core",
+      "name": "Techno Prism Core",
+      "description": "High-contrast futuristic style mixing chrome planes with transparent prisms. Echoes hi-fi electronics and kinetic architecture.",
+      "idealFor": ["sci-fi explorers", "AI themed IP", "music tech partnerships"],
+      "colorPalette": "Mirror silver, electric cyan, ultraviolet accents, matte charcoal.",
+      "recommendedMaterials": ["mirror_chrome_plating", "abs_armature", "diffused_led_module"],
+      "promptKeywords": ["angular armor", "holographic strips", "futuristic joints", "designer art toy"]
+    },
+    {
+      "id": "heritage_craft_revival",
+      "name": "Heritage Craft Revival",
+      "description": "Combines traditional motifs with contemporary minimalism. Uses embroidery-like patterns, carved reliefs, and muted earthy pigments.",
+      "idealFor": ["cultural storytelling", "museum editions", "artisan workshops"],
+      "colorPalette": "Oxblood red, indigo, aged gold, warm ivory.",
+      "recommendedMaterials": ["porcelain_shell", "hand_brush_glaze", "engraved_wood_inlay"],
+      "promptKeywords": ["folk patterns", "relief carving", "heritage detailing", "designer art toy"]
+    },
+    {
+      "id": "bio_mech_harmony",
+      "name": "Bio-Mech Harmony",
+      "description": "Organic vines interwoven with mechanical structures. Balances matte armor plates with living textures for a collectible, high-detail finish.",
+      "idealFor": ["battle guardians", "nature spirits", "premium collector runs"],
+      "colorPalette": "Deep forest green, bone white, graphite black, neon sap green.",
+      "recommendedMaterials": ["abs_armature", "bio_resin_overgrowth", "weathering_powder_finish"],
+      "promptKeywords": ["biomechanical fusion", "articulated joints", "organic armor", "designer art toy"]
+    },
+    {
+      "id": "playful_bold_block",
+      "name": "Playful Bold Block",
+      "description": "Chunky block-out aesthetics with strong color blocking and toyetic geometry. Evokes street culture and graphic art.",
+      "idealFor": ["streetwear collabs", "youth campaigns", "urban mascots"],
+      "colorPalette": "Signal yellow, cyan, magenta, deep black outlines.",
+      "recommendedMaterials": ["soft_vinyl_skin", "matte_pu_coating"],
+      "promptKeywords": ["bold color blocks", "thick outline", "playful proportions", "designer art toy"]
+    }
+  ],
+  "materials": [
+    {
+      "id": "soft_vinyl_skin",
+      "name": "Soft Vinyl Skin",
+      "finish": "Matte to semi-gloss",
+      "whenToUse": "Flexible outer shell for approachable characters and rounded silhouettes.",
+      "notes": "Supports airbrushed gradients and pad-printed details.",
+      "promptKeywords": ["soft vinyl shell", "smooth matte finish"]
+    },
+    {
+      "id": "clear_resin_core",
+      "name": "Clear Resin Core",
+      "finish": "High gloss transparency",
+      "whenToUse": "Showcases inner structures or glowing effects with suspended particles.",
+      "notes": "Pair with embedded glitter or pigment clouds for depth.",
+      "promptKeywords": ["clear resin core", "floating particles"]
+    },
+    {
+      "id": "mirror_chrome_plating",
+      "name": "Mirror Chrome Plating",
+      "finish": "Reflective metallic",
+      "whenToUse": "Highlight mechanical parts, helmets, or accessories that need futuristic sheen.",
+      "notes": "Requires clean geometry; combine with matte surfaces for contrast.",
+      "promptKeywords": ["mirror chrome plating", "reflective highlights"]
+    },
+    {
+      "id": "abs_armature",
+      "name": "ABS Structural Armature",
+      "finish": "Matte engineering plastic",
+      "whenToUse": "Internal skeletons and articulated joints requiring rigidity.",
+      "notes": "Allows modular limb swapping and stability.",
+      "promptKeywords": ["abs internal frame", "articulated joints"]
+    },
+    {
+      "id": "porcelain_shell",
+      "name": "Porcelain Shell",
+      "finish": "Smooth glazed ceramic",
+      "whenToUse": "Premium cultural editions emphasizing craftsmanship.",
+      "notes": "Supports hand-painted motifs and etched relief.",
+      "promptKeywords": ["porcelain shell", "hand painted glaze"]
+    },
+    {
+      "id": "bio_resin_overgrowth",
+      "name": "Bio Resin Overgrowth",
+      "finish": "Textured matte with organic veins",
+      "whenToUse": "Simulate plant or coral structures merging with armor.",
+      "notes": "Works with dry brushing and weathering powders.",
+      "promptKeywords": ["organic resin overgrowth", "veined texture"]
+    },
+    {
+      "id": "matte_pu_coating",
+      "name": "Matte PU Coating",
+      "finish": "Soft touch matte",
+      "whenToUse": "Surface sealing for bold color blocks and tactile feel.",
+      "notes": "Reduces glare under display lighting.",
+      "promptKeywords": ["soft touch matte coating"]
+    },
+    {
+      "id": "diffused_led_module",
+      "name": "Diffused LED Module",
+      "finish": "Soft internal glow",
+      "whenToUse": "Add controlled lighting to transparent cores or visors.",
+      "notes": "Use with translucent resin and frosted surfaces to avoid hotspots.",
+      "promptKeywords": ["diffused internal led glow"]
+    },
+    {
+      "id": "hand_brush_glaze",
+      "name": "Hand Brush Glaze",
+      "finish": "Layered brush texture",
+      "whenToUse": "Traditional motifs requiring visible brush strokes and depth.",
+      "notes": "Pairs well with porcelain shells or carved wood inlay.",
+      "promptKeywords": ["hand brushed glaze texture"]
+    },
+    {
+      "id": "engraved_wood_inlay",
+      "name": "Engraved Wood Inlay",
+      "finish": "Natural wood grain",
+      "whenToUse": "Accents for heritage or eco-inspired designs.",
+      "notes": "Use laser-etched motifs or embedded panels.",
+      "promptKeywords": ["engraved wood inlay panels"]
+    },
+    {
+      "id": "weathering_powder_finish",
+      "name": "Weathering Powder Finish",
+      "finish": "Subtle matte patina",
+      "whenToUse": "Add depth to armor edges and organic-mech transitions.",
+      "notes": "Fix with clear matte sealant to prevent transfer.",
+      "promptKeywords": ["weathered patina shading"]
+    }
+  ],
+  "crafts": [
+    {
+      "id": "gradual_airbrush",
+      "name": "Gradual Airbrush Gradient",
+      "bestFor": ["soft vinyl surfaces", "pastel styles"],
+      "effect": "Creates smooth color transitions for cheeks, limbs, and accessories.",
+      "promptKeywords": ["airbrushed gradient shading"]
+    },
+    {
+      "id": "panel_line_wash",
+      "name": "Panel Line Wash",
+      "bestFor": ["mechanical shells", "articulated armor"],
+      "effect": "Accentuates grooves and panel divisions with controlled ink wash.",
+      "promptKeywords": ["panel line detailing"]
+    },
+    {
+      "id": "foil_hot_stamp",
+      "name": "Foil Hot Stamp",
+      "bestFor": ["logos", "badge details", "limited edition numbering"],
+      "effect": "Applies metallic foil accents with crisp edges.",
+      "promptKeywords": ["foil hot stamp accent"]
+    },
+    {
+      "id": "micro_embroidery_pad",
+      "name": "Micro Embroidery Pad Print",
+      "bestFor": ["heritage motifs", "textile patterns"],
+      "effect": "Simulates stitched surfaces with multi-layer pad printing.",
+      "promptKeywords": ["embroidered pattern pad print"]
+    }
+  ],
+  "headToBodyRatios": [
+    {
+      "id": "sd_two_head",
+      "ratio": "2:1",
+      "nickname": "Super Deformed Duo Head",
+      "impression": "Cute and exaggerated, perfect for mascots and friendly characters.",
+      "bestFor": ["playful mascots", "fashion mini series"],
+      "promptKeywords": ["two-head super deformed proportion"]
+    },
+    {
+      "id": "balanced_three_head",
+      "ratio": "3:1",
+      "nickname": "Balanced Chibi Hero",
+      "impression": "Keeps chibi charm while allowing detailed torso accessories.",
+      "bestFor": ["adventure figures", "collector sets"],
+      "promptKeywords": ["three-head chibi proportion"]
+    },
+    {
+      "id": "stylized_four_head",
+      "ratio": "4:1",
+      "nickname": "Stylized Guardian",
+      "impression": "More heroic stance with room for dynamic posing.",
+      "bestFor": ["battle guardians", "premium editions"],
+      "promptKeywords": ["four-head stylized proportion"]
+    },
+    {
+      "id": "realistic_five_head",
+      "ratio": "5:1",
+      "nickname": "Designer Realism",
+      "impression": "Closer to realistic anatomy while retaining art-toy identity.",
+      "bestFor": ["fashion figures", "museum grade pieces"],
+      "promptKeywords": ["five-head designer proportion"]
+    }
+  ],
+  "pairings": [
+    {
+      "style": "neo_pastel_atelier",
+      "materials": ["soft_vinyl_skin", "clear_resin_core"],
+      "crafts": ["gradual_airbrush", "foil_hot_stamp"],
+      "headToBodyRatio": "sd_two_head",
+      "promptGuideline": "pastel designer art toy, soft vinyl shell with clear resin heart, airbrushed gradient cheeks, foil hot stamp badge, two-head super deformed proportion, standing on clean white background"
+    },
+    {
+      "style": "techno_prism_core",
+      "materials": ["mirror_chrome_plating", "abs_armature", "diffused_led_module"],
+      "crafts": ["panel_line_wash"],
+      "headToBodyRatio": "balanced_three_head",
+      "promptGuideline": "futuristic designer art toy, mirror chrome armor, internal diffused led glow, articulated abs joints with panel line detailing, three-head chibi proportion, isolated on white background"
+    },
+    {
+      "style": "heritage_craft_revival",
+      "materials": ["porcelain_shell", "hand_brush_glaze", "engraved_wood_inlay"],
+      "crafts": ["micro_embroidery_pad"],
+      "headToBodyRatio": "stylized_four_head",
+      "promptGuideline": "heritage inspired designer art toy, porcelain shell with hand brushed glaze, wood inlay panels, embroidered pattern pad print accents, four-head stylized proportion, clean white backdrop"
+    },
+    {
+      "style": "bio_mech_harmony",
+      "materials": ["abs_armature", "bio_resin_overgrowth", "weathering_powder_finish"],
+      "crafts": ["panel_line_wash"],
+      "headToBodyRatio": "balanced_three_head",
+      "promptGuideline": "biomechanical designer art toy, organic resin overgrowth on matte armor, weathered patina shading, articulated abs internal frame, three-head chibi proportion, white studio background"
+    },
+    {
+      "style": "playful_bold_block",
+      "materials": ["soft_vinyl_skin", "matte_pu_coating"],
+      "crafts": ["gradual_airbrush"],
+      "headToBodyRatio": "sd_two_head",
+      "promptGuideline": "bold color block designer art toy, soft vinyl body with soft touch matte coating, subtle airbrushed shading, two-head super deformed proportion, crisp white background"
+    }
+  ]
+}

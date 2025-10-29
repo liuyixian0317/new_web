@@ -18,13 +18,13 @@ function AppHeader() {
         <img
           className="app-header__logo"
           src="/assets/midas-shiny-logo.svg"
-          alt="MIDAS SHINY logo"
+          alt={`${t("app.brandTitle")} logo`}
           width={48}
           height={48}
         />
         <div>
-          <div className="app-header__title">MIDAS SHINY</div>
-          <div className="app-header__subtitle">{t("app.subtitle")}</div>
+          <div className="app-header__title">{t("app.brandTitle")}</div>
+          <div className="app-header__subtitle">{t("app.brandSubtitle")}</div>
         </div>
       </div>
       <nav className="app-header__nav">

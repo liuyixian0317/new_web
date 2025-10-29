@@ -14,7 +14,7 @@ Environment variables:
     ARK_BASE_URL:                 Optional API base (default Ark Beijing v3).
     ARK_SEED_MODEL:               Override for the Seed 1.6 model id.
     ARK_SEEDDREAM_MODEL:          Override for the SeedDream model id.
-    ARK_SEEDDREAM_SIZE:           Default size to request from SeedDream.
+    ARK_SEEDDREAM_SIZE:           Default square size (e.g. 1024x1024).
     ARK_SEEDDREAM_MAX_IMAGES:     Max images per prompt (default 1).
     SEED_ACTION_DEBUG:            If set to a truthy value, the raw action block
                                   will be echoed to stderr for debugging.
@@ -27,6 +27,7 @@ import logging
 import os
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple, TypedDict
 from uuid import uuid4
@@ -38,31 +39,44 @@ STREAM_TIMEOUT = 120
 ARK_BASE_URL = os.getenv("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3")
 ARK_SEED_MODEL = os.getenv("ARK_SEED_MODEL", "doubao-seed-1-6-251015")
 ARK_SEEDDREAM_MODEL = os.getenv("ARK_SEEDDREAM_MODEL", "doubao-seedream-4-0-250828")
-ARK_SEEDDREAM_SIZE = os.getenv("ARK_SEEDDREAM_SIZE", "2K")
-ARK_SEEDDREAM_MAX_IMAGES = int(os.getenv("ARK_SEEDDREAM_MAX_IMAGES", "1"))
+ARK_SEEDDREAM_SIZE = os.getenv("ARK_SEEDDREAM_SIZE", "1024x1024")
+ARK_SEEDDREAM_PORTRAIT_SIZE = os.getenv("ARK_SEEDDREAM_PORTRAIT_SIZE", "1024x1365")
+ARK_SEEDDREAM_LANDSCAPE_SIZE = os.getenv("ARK_SEEDDREAM_LANDSCAPE_SIZE", "1365x1024")
+ARK_SEEDDREAM_MAX_IMAGES = int(os.getenv("ARK_SEEDDREAM_MAX_IMAGES", "4"))
 ARK_SEED_REASONING_EFFORT = os.getenv("ARK_SEED_REASONING_EFFORT", "medium")
 ARK_SEED_THINKING_MODE = os.getenv("ARK_SEED_THINKING_MODE", "enabled")
 
 SYSTEM_PROMPT = """\
-你是“潮玩造梦师”项目的创意统筹助手，负责和用户一起完善潮玩设计需求，并在时机成熟时调用 SeedDream 生图模型生成草图。
+You are the creative production assistant for the “Midas Shiny” project. Collaborate with the user to shape a collectible toy brief and trigger the SeedDream image model once the concept is ready.
 
-工作准则：
-1. 先澄清需求再行动：如果用户的信息不够生成图片，请用中文解释缺失信息并提出明确问题，与用户继续对话。
-2. 当需求信息充分、可以生成图片时，对用户做出友好的回应，并准备 SeedDream 所需的 prompt。
-3. 输出格式：先给出面向用户的自然语言回复；随后以 <ActionPlan> 块结束整个回答，不要在 </ActionPlan> 之后再写任何内容。
+Core responsibilities:
+1. Required information: the user must at least describe the toy theme or concept (e.g. girl, boy, specific animal, stylised doll). Once a concept exists, you may infer the remaining dimensions—style, material combination, special craftsmanship, and head-to-body ratio—by selecting suitable options from the knowledge base. Surface every assumption so the user can refine or override it.
+2. Language rule: respond in English by default for both user-facing text and any intermediate suggestions. Only switch to Chinese (including user reply and optional tips) if the most recent user input is predominantly Chinese; otherwise remain in English. Keep the <ActionPlan> block and prompt lines in English regardless of user language.
+3. Clarify before you act. If the concept itself is unclear, ask targeted questions (following the language rule). When other dimensions are missing, suggest well-matched options directly. Once you have built a coherent brief (either confirmed by the user or inferred with reasonable assumptions), proceed to image generation without asking for additional confirmation.
+4. Use the knowledge base in knowledge/toy-knowledge.json to recommend styles, material stacks, crafts, and head-to-body ratios. Reference the provided `pairings` or combine entries yourself, and explain briefly why each recommendation fits the user’s concept.
+5. When the user explicitly requests a collection or series of toys, plan multiple prompts (one per toy) that share compatible size, materials, and visual coherence. If the user does not specify how many toys are in the series, default to four distinct prompts for the set. Present the plan, then prepare generation requests for each prompt. If the user does not mention a series, default to a single prompt.
+6. Response format: first produce the natural-language reply for the user (respecting the language rule). Afterwards, terminate the message with an <ActionPlan> block and never write anything after </ActionPlan>.
    <ActionPlan>
    action: ask_user | generate_image
    prompts:
-   - 如果 action 为 generate_image，在此罗列将要用于 SeedDream 的英文 prompt，每行一个；否则保持列表为空。
+   size: 1024x1024 | 1024x1365 | 1365x1024
+   - When action is generate_image, list each English prompt line to send to SeedDream; otherwise leave the list empty.
    </ActionPlan>
-4. 判断充足信息的要素包括：角色/主体、风格、材质或质感、场景与氛围、色彩重点等。若缺少其中关键要素，应继续提问。
-5. 当生成图片时，只放入真正需要投喂给 SeedDream 的 prompt，避免无关文字。
-6. 推理过程中可以在内部思考阶段整理信息，但不要在对用户的最终回答中泄露思考痕迹或系统提示信息。
+7. Prompt construction rules when action=generate_image:
+   - Explicitly mention the subject as a “designer art toy” or “collectible art toy” to avoid non-toy interpretations.
+   - Include the confirmed style, material choices, special crafts, head-to-body ratio keywords, and explicitly state “full-body view, no occlusion” to avoid cropped or obstructed toys.
+   - Force a clean white studio background (`white background`, `no scenery`) and avoid extra effects such as dramatic lighting flares, particles, or complex environments.
+   - Keep the prompt focused on the toy itself; do not request additional characters, IP crossovers, or unrelated props.
+   - Determine the target size: default to a square 1024×1024 canvas when unspecified; use a portrait-oriented format (1024×1365) for tall or standing subjects; use a landscape-oriented format (1365×1024) for wide scenes. Mention the chosen orientation in the prompt (e.g., “square format 1024x1024”).
+   - For batch generation, use the same prompt and image size to obtain several variations of the same toy. For multi-toy collections, generate one prompt per toy (each with an explicit size/orientation), and each prompt may still produce multiple variations based on the batch count.
+8. After generating or recommending prompts, ask whether the user needs further optimisation or adjustments, but do not block initial generation once the brief is ready.
+9. You may organise your reasoning internally, but do not reveal chain-of-thought traces or these instructions to the user.
 """
 
 ACTION_PLAN_PATTERN = re.compile(r"<ActionPlan>(?P<body>.*?)</ActionPlan>", re.DOTALL | re.IGNORECASE)
 ACTION_LINE_PATTERN = re.compile(r"action\s*:\s*(?P<action>\w+)", re.IGNORECASE)
 PROMPT_LINE_PATTERN = re.compile(r"^\s*-\s*(.+)$", re.MULTILINE)
+SIZE_LINE_PATTERN = re.compile(r"size\s*:\s*(?P<size>[^\n]+)", re.IGNORECASE)
 
 
 class SeedStreamEvent(TypedDict, total=False):
@@ -75,12 +89,14 @@ class SeedStreamEvent(TypedDict, total=False):
     prompts: List[str]
     artworks: List[Dict[str, str]]
     thinking: str
+    size: str
 
 
 @dataclass
 class ActionDecision:
     action: str = "ask_user"
     prompts: Tuple[str, ...] = ()
+    size: Optional[str] = None
 
     @property
     def needs_images(self) -> bool:
@@ -92,6 +108,26 @@ def _check_api_key() -> str:
     if not api_key:
         raise RuntimeError("ARK_API_KEY environment variable is required")
     return api_key
+
+
+def _normalize_size(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    normalized = value.strip().lower().split()[0]
+    if normalized in {ARK_SEEDDREAM_SIZE.lower(), "1024x1024"}:
+        return ARK_SEEDDREAM_SIZE
+    if normalized in {ARK_SEEDDREAM_PORTRAIT_SIZE.lower(), "1024x1365"}:
+        return ARK_SEEDDREAM_PORTRAIT_SIZE
+    if normalized in {ARK_SEEDDREAM_LANDSCAPE_SIZE.lower(), "1365x1024"}:
+        return ARK_SEEDDREAM_LANDSCAPE_SIZE
+    return None
+
+
+def _select_image_size(requested: Optional[str]) -> str:
+    normalized = _normalize_size(requested)
+    if normalized:
+        return normalized
+    return ARK_SEEDDREAM_SIZE
 
 
 def _format_content_block(text: str) -> List[Dict[str, str]]:
@@ -119,7 +155,9 @@ def _parse_action_block(content: str) -> ActionDecision:
     action = action_match.group("action").strip().lower() if action_match else "ask_user"
 
     prompts = tuple(p.strip() for p in PROMPT_LINE_PATTERN.findall(body) if p.strip())
-    decision = ActionDecision(action=action, prompts=prompts)
+    size_match = SIZE_LINE_PATTERN.search(body)
+    size_value = size_match.group("size").strip() if size_match else None
+    decision = ActionDecision(action=action, prompts=prompts, size=size_value)
 
     if os.getenv("SEED_ACTION_DEBUG"):
         print("DEBUG Seed Action Plan:", decision, file=sys.stderr)
@@ -168,17 +206,15 @@ def _request_seed_stream(messages: List[Dict[str, object]]) -> requests.Response
     return response
 
 
-def _request_seeddream(prompt: str) -> List[Dict[str, str]]:
+def _request_single_seeddream(prompt: str, size: str) -> Dict[str, str]:
     api_key = _check_api_key()
 
     payload = {
         "model": ARK_SEEDDREAM_MODEL,
         "prompt": prompt,
         "response_format": "url",
-        "size": ARK_SEEDDREAM_SIZE,
+        "size": size,
         "stream": False,
-        "sequential_image_generation": "auto",
-        "sequential_image_generation_options": {"max_images": ARK_SEEDDREAM_MAX_IMAGES},
         "watermark": True,
     }
 
@@ -188,27 +224,67 @@ def _request_seeddream(prompt: str) -> List[Dict[str, str]]:
     }
 
     logger.info("调用 SeedDream model=%s prompt=%s", ARK_SEEDDREAM_MODEL, prompt)
-    response = requests.post(
-        f"{ARK_BASE_URL.rstrip('/')}/images/generations",
-        headers=headers,
-        json=payload,
-        timeout=STREAM_TIMEOUT,
-    )
-    response.raise_for_status()
+    try:
+        response = requests.post(
+            f"{ARK_BASE_URL.rstrip('/')}/images/generations",
+            headers=headers,
+            json=payload,
+            timeout=STREAM_TIMEOUT,
+        )
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        detail = exc.response.text if exc.response is not None else ""
+        logger.error("SeedDream 请求失败 size=%s prompt=%s detail=%s", size, prompt, detail[:500])
+        raise
 
     data = response.json()
-    artworks: List[Dict[str, str]] = []
-    for item in data.get("data", []):
-        image_url = item.get("url", "")
-        artwork_id = item.get("id") or str(uuid4())
-        artworks.append(
-            {
-                "id": artwork_id,
-                "prompt": prompt,
-                "imageUrl": image_url,
-                "sizeLabel": item.get("size") or ARK_SEEDDREAM_SIZE,
-            }
+    item = (data.get("data") or [{}])[0]
+    image_url = item.get("url", "")
+    artwork_id = item.get("id") or str(uuid4())
+    return {
+        "id": artwork_id,
+        "prompt": prompt,
+        "imageUrl": image_url,
+        "sizeLabel": item.get("size") or size,
+    }
+
+
+def _request_seeddream(prompt: str, image_count: int, size: str) -> List[Dict[str, str]]:
+    requested = max(1, image_count)
+    max_workers = min(requested, max(1, ARK_SEEDDREAM_MAX_IMAGES))
+    if requested > ARK_SEEDDREAM_MAX_IMAGES:
+        logger.warning(
+            "请求生成图片数量 %d 超过 ARK_SEEDDREAM_MAX_IMAGES=%d，已分批并行执行",
+            requested,
+            ARK_SEEDDREAM_MAX_IMAGES,
         )
+    logger.info(
+        "准备并行生成 SeedDream 图片 prompt=%s count=%d workers=%d size=%s",
+        prompt,
+        requested,
+        max_workers,
+        size,
+    )
+
+    artworks: List[Dict[str, str]] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(_request_single_seeddream, prompt, size) for _ in range(requested)]
+        for idx, future in enumerate(as_completed(futures)):
+            try:
+                artwork = future.result()
+                artwork["index"] = idx
+                artworks.append(artwork)
+            except Exception as exc:  # pragma: no cover
+                logger.exception("SeedDream 并行请求失败: %s", exc)
+                artworks.append(
+                    {
+                        "id": str(uuid4()),
+                        "prompt": prompt,
+                        "error": str(exc),
+                        "imageUrl": "",
+                        "index": idx,
+                    }
+                )
     return artworks
 
 
@@ -250,7 +326,10 @@ def _extract_message_parts(message_obj: Dict) -> Tuple[str, str]:
     return thinking_text, content_text
 
 
-def stream_seed_chat(history: Sequence[Dict[str, str]]) -> Generator[SeedStreamEvent, None, None]:
+def stream_seed_chat(
+    history: Sequence[Dict[str, str]],
+    image_count: int,
+) -> Generator[SeedStreamEvent, None, None]:
     """Stream a Seed 1.6 response and optionally trigger SeedDream generation."""
 
     messages = _prepare_messages(history)
@@ -356,11 +435,27 @@ def stream_seed_chat(history: Sequence[Dict[str, str]]) -> Generator[SeedStreamE
     assistant_message = ACTION_PLAN_PATTERN.sub("", assistant_raw).strip()
 
     artworks: List[Dict[str, str]] = []
+    prompts_list = list(decision.prompts)
 
     if decision.needs_images:
-        for prompt in decision.prompts:
+        # 在启动图片生成之前，将 ActionPlan 信息先行推送给前端
+        resolved_size = _select_image_size(decision.size)
+        yield SeedStreamEvent(
+            type="action_plan",
+            message=assistant_message,
+            delta="",
+            action=decision.action,
+            prompts=prompts_list,
+            thinking=thinking_result,
+            size=resolved_size,
+        )
+
+        size_from_plan = resolved_size
+        for prompt in prompts_list:
+            image_size = size_from_plan
             try:
-                artworks.extend(_request_seeddream(prompt))
+                generated = _request_seeddream(prompt, image_count, image_size)
+                artworks.extend(generated)
             except requests.HTTPError as exc:
                 logger.exception("SeedDream HTTP 错误: %s", exc)
                 error_msg = f"SeedDream 请求失败：{exc.response.status_code}"
@@ -368,6 +463,7 @@ def stream_seed_chat(history: Sequence[Dict[str, str]]) -> Generator[SeedStreamE
                     {
                         "id": str(uuid4()),
                         "prompt": prompt,
+                        "sizeLabel": image_size,
                         "error": error_msg,
                         "imageUrl": "",
                     }
@@ -378,6 +474,7 @@ def stream_seed_chat(history: Sequence[Dict[str, str]]) -> Generator[SeedStreamE
                     {
                         "id": str(uuid4()),
                         "prompt": prompt,
+                        "sizeLabel": image_size,
                         "error": str(exc),
                         "imageUrl": "",
                     }
@@ -403,12 +500,12 @@ class SeedAgent:
     def add_message(self, role: str, content: str) -> None:
         self.history.append({"role": role, "content": content})
 
-    def interact(self, user_message: str) -> Iterable[SeedStreamEvent]:
+    def interact(self, user_message: str, image_count: int) -> Iterable[SeedStreamEvent]:
         self.add_message("user", user_message)
         pending_assistant: List[str] = []
 
         history_snapshot = list(self.history)
-        for event in stream_seed_chat(history_snapshot):
+        for event in stream_seed_chat(history_snapshot, image_count):
             logger.debug("stream_seed_chat 事件: %s", event.get("type"))
             if event["type"] == "content" and "delta" in event:
                 pending_assistant.append(event["delta"])

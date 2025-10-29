@@ -93,6 +93,7 @@ const getKnowledgeSuggestion = (prompt: string): KnowledgeEntry | undefined =>
 export const mockCreateAgentSession = async (payload: CreateSessionRequest): Promise<AgentSessionSummary> => {
   const id = randomId("session");
   const createdAt = new Date().toISOString();
+  const requestedCount = payload.requestedCount ?? 4;
   const knowledge = getKnowledgeSuggestion(payload.prompt);
   const referenceImageUrl =
     typeof window !== "undefined" && payload.referenceImage ? URL.createObjectURL(payload.referenceImage) : undefined;
@@ -106,6 +107,7 @@ export const mockCreateAgentSession = async (payload: CreateSessionRequest): Pro
     status: "collecting",
     referenceImageUrl,
     notes: payload.notes,
+    requestedCount,
     plan: buildInitialPlan(id),
     messages: [
       {
@@ -128,7 +130,8 @@ export const mockCreateAgentSession = async (payload: CreateSessionRequest): Pro
     createdAt,
     status: "collecting",
     referenceImageUrl,
-    notes: payload.notes
+    notes: payload.notes,
+    requestedCount
   };
 };
 
@@ -201,10 +204,12 @@ export const mockSendAgentMessage = async (
 
   const plan = updatePlanProgress(session.plan);
   const artworks = [...session.generatedArtworks];
+  const requestedCount = payload.requestedCount ?? session.requestedCount ?? 4;
 
-  if (plan.some((step) => step.status === "active" && step.id.endsWith("plan-3")) && artworks.length < 4) {
-    artworks.push(buildArtwork(sessionId, artworks.length));
-  }
+  const newArtworks = Array.from({ length: requestedCount }, (_, index) =>
+    buildArtwork(sessionId, artworks.length + index)
+  );
+  artworks.push(...newArtworks);
 
   session.plan = plan;
   session.knowledgeReferences = updatedKnowledge;
@@ -213,10 +218,12 @@ export const mockSendAgentMessage = async (
 
   mockSessions.set(sessionId, session);
 
+  session.requestedCount = requestedCount;
+
   return {
     message: clone(assistantMessage),
     plan: clone(plan),
-    artworks: clone(artworks)
+    artworks: clone(newArtworks)
   };
 };
 
@@ -241,9 +248,10 @@ export const mockFinalizeAgentSession = async (sessionId: string): Promise<Final
     .filter(Boolean)
     .join("；");
 
+  const fallbackCount = session.requestedCount ?? 4;
   const artworks = session.generatedArtworks?.length
     ? session.generatedArtworks
-    : Array.from({ length: 4 }, (_, index) => buildArtwork(sessionId, index));
+    : Array.from({ length: fallbackCount }, (_, index) => buildArtwork(sessionId, index));
 
   const updatedSession: AgentSessionDetail = {
     ...session,

@@ -17,7 +17,7 @@ import {
   mockSendAgentMessage
 } from "./mockAgent";
 
-export type AgentStreamEventType = "thinking" | "content" | "complete";
+export type AgentStreamEventType = "thinking" | "content" | "action_plan" | "complete";
 
 export interface AgentStreamEvent {
   type: AgentStreamEventType;
@@ -27,11 +27,14 @@ export interface AgentStreamEvent {
   prompts?: string[];
   artworks?: GeneratedArtwork[];
   thinking?: string;
+  requestedCount?: number;
+  size?: string;
 }
 
 export interface AgentStreamCallbacks {
   onThinkingDelta?: (delta: string) => void;
   onContentDelta?: (delta: string) => void;
+  onActionPlan?: (prompts: string[], thinking: string | undefined, action: string | undefined, size: string | undefined) => void;
   onComplete: (event: AgentStreamEvent) => void;
   onError?: (error: Error) => void;
 }
@@ -79,6 +82,9 @@ export const createAgentSession = async (payload: CreateSessionRequest): Promise
 
   const form = new FormData();
   form.append("prompt", payload.prompt);
+  if (payload.requestedCount) {
+    form.append("requestedCount", String(payload.requestedCount));
+  }
   if (payload.notes) form.append("notes", payload.notes);
   if (payload.locale) form.append("locale", payload.locale);
   if (payload.referenceImage) {
@@ -128,6 +134,9 @@ export const sendAgentMessage = async (
 
   const form = new FormData();
   form.append("message", payload.message);
+  if (payload.requestedCount) {
+    form.append("requestedCount", String(payload.requestedCount));
+  }
   payload.attachments?.forEach((file, index) => {
     form.append(`attachment_${index}`, file);
   });
@@ -153,6 +162,9 @@ export const streamAgentMessage = async (
       const content = result.message.content;
       callbacks.onThinkingDelta?.("（模拟）Agent 正在思考…\n");
       callbacks.onContentDelta?.(content);
+      if (callbacks.onActionPlan) {
+        callbacks.onActionPlan(result.message.prompts ?? [], result.message.thinkingTrace, result.message.action, undefined);
+      }
       callbacks.onComplete({
         type: "complete",
         message: content,
@@ -173,6 +185,9 @@ export const streamAgentMessage = async (
 
   const form = new FormData();
   form.append("message", payload.message);
+  if (payload.requestedCount) {
+    form.append("requestedCount", String(payload.requestedCount));
+  }
   payload.attachments?.forEach((file, index) => {
     form.append(`attachment_${index}`, file);
   });
@@ -232,6 +247,8 @@ export const streamAgentMessage = async (
           callbacks.onThinkingDelta(event.delta);
         } else if (event.type === "content" && event.delta && callbacks.onContentDelta) {
           callbacks.onContentDelta(event.delta);
+        } else if (event.type === "action_plan" && callbacks.onActionPlan) {
+          callbacks.onActionPlan(event.prompts ?? [], event.thinking, event.action, event.size);
         } else if (event.type === "error" && callbacks.onError && event.message) {
           callbacks.onError(new Error(event.message));
           completed = true;
@@ -253,6 +270,8 @@ export const streamAgentMessage = async (
           callbacks.onThinkingDelta(event.delta);
         } else if (event.type === "content" && event.delta && callbacks.onContentDelta) {
           callbacks.onContentDelta(event.delta);
+        } else if (event.type === "action_plan" && callbacks.onActionPlan) {
+          callbacks.onActionPlan(event.prompts ?? [], event.thinking, event.action, event.size);
         } else if (event.type === "error" && callbacks.onError && event.message) {
           callbacks.onError(new Error(event.message));
           completed = true;

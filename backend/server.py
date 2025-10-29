@@ -15,7 +15,7 @@ from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from .seed_agent import SeedAgent
+from .seed_agent import ARK_SEEDDREAM_MAX_IMAGES, SeedAgent
 
 
 def utc_now_iso() -> str:
@@ -74,7 +74,13 @@ _configure_logging()
 
 
 class SessionState:
-    def __init__(self, prompt: str, notes: Optional[str], locale: Optional[str]) -> None:
+    def __init__(
+        self,
+        prompt: str,
+        notes: Optional[str],
+        locale: Optional[str],
+        requested_count: int,
+    ) -> None:
         self.id = str(uuid4())
         self.initial_prompt = prompt
         self.notes = notes
@@ -87,6 +93,7 @@ class SessionState:
         self.generated_artworks: List[Dict] = []
         self.knowledge_references: List[str] = []
         self.final_prompt: Optional[str] = None
+        self.requested_count = requested_count
         self.agent = SeedAgent()
 
     def as_summary(self) -> Dict:
@@ -97,6 +104,7 @@ class SessionState:
             "status": self.status,
             "referenceImageUrl": self.reference_image_url,
             "notes": self.notes,
+            "requestedCount": self.requested_count,
         }
 
     def as_detail(self) -> Dict:
@@ -122,6 +130,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+DEFAULT_REQUESTED_COUNT = 4
+
+
+def _normalize_requested_count(value: Optional[int]) -> int:
+    try:
+        if value is None:
+            raise ValueError
+        count = int(value)
+    except (TypeError, ValueError):
+        count = DEFAULT_REQUESTED_COUNT
+
+    if count < 1:
+        count = 1
+    if count > ARK_SEEDDREAM_MAX_IMAGES:
+        logger.warning(
+            "请求的批量数量 %d 超过 ARK_SEEDDREAM_MAX_IMAGES=%d，已截断",
+            count,
+            ARK_SEEDDREAM_MAX_IMAGES,
+        )
+        count = ARK_SEEDDREAM_MAX_IMAGES
+    return count
+
+
 SESSIONS: Dict[str, SessionState] = {}
 
 
@@ -130,10 +161,17 @@ async def create_session(
     prompt: str = Form(...),
     notes: Optional[str] = Form(None),
     locale: Optional[str] = Form(None),
+    requestedCount: Optional[int] = Form(None),
     referenceImage: Optional[UploadFile] = None,
 ):
-    logger.info("创建会话，初始 prompt=%s locale=%s", prompt, locale)
-    session = SessionState(prompt=prompt, notes=notes, locale=locale)
+    requested_count = _normalize_requested_count(requestedCount)
+    logger.info(
+        "创建会话，初始 prompt=%s locale=%s requested_count=%d",
+        prompt,
+        locale,
+        requested_count,
+    )
+    session = SessionState(prompt=prompt, notes=notes, locale=locale, requested_count=requested_count)
     if referenceImage is not None:
         # TODO: persist the file and assign a URL accessible by the frontend.
         session.reference_image_url = None
@@ -186,18 +224,34 @@ def _merge_artworks(session: SessionState, artworks: Optional[Iterable[Dict]]) -
 
 
 @app.post("/api/agent/sessions/{session_id}/messages")
-async def send_message(session_id: str, message: str = Form(...)):
+async def send_message(
+    session_id: str,
+    message: str = Form(...),
+    requestedCount: Optional[int] = Form(None),
+):
     session = get_session_or_404(session_id)
-    logger.info("收到用户消息 session_id=%s message=%s", session_id, message)
-    _append_message(session, "user", message)
+    if requestedCount is not None:
+        session.requested_count = _normalize_requested_count(requestedCount)
+    else:
+        session.requested_count = _normalize_requested_count(session.requested_count)
+
+    logger.info(
+        "收到用户消息 session_id=%s message=%s requested_count=%d",
+        session_id,
+        message,
+        session.requested_count,
+    )
+    _append_message(session, "user", message, requestedCount=session.requested_count)
 
     async def event_stream():
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue[Optional[Dict]] = asyncio.Queue()
 
+        count_for_request = session.requested_count
+
         def run_agent():
             try:
-                for event in session.agent.interact(message):
+                for event in session.agent.interact(message, count_for_request):
                     asyncio.run_coroutine_threadsafe(queue.put(event), loop)
             except Exception as exc:  # pragma: no cover
                 logger.exception("Agent 处理消息失败: %s", exc)
@@ -217,6 +271,7 @@ async def send_message(session_id: str, message: str = Form(...)):
                 continue
 
             payload = dict(event)
+            payload.setdefault("requestedCount", session.requested_count)
             sse_payload = f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
             logger.debug("Agent 流事件: %s", payload.get("type"))
 
@@ -238,6 +293,7 @@ async def send_message(session_id: str, message: str = Form(...)):
                     thinkingTrace=thinking,
                     action=action,
                     prompts=prompts,
+                    requestedCount=session.requested_count,
                 )
                 _merge_artworks(session, event.get("artworks"))
 

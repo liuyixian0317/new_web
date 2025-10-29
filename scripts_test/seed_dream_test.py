@@ -15,7 +15,7 @@ imagesResponse = client.images.generate(
     # image=[""],
     size="2K",
     sequential_image_generation="auto",
-    sequential_image_generation_options=SequentialImageGenerationOptions(max_images=1),
+    sequential_image_generation_options=SequentialImageGenerationOptions(max_images=3),
     response_format="url",
     watermark=True
 ) 
